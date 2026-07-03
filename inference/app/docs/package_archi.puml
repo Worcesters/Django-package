@@ -1,11 +1,11 @@
-@startuml django-inference-classes
+@startuml inference-classes
 !theme plain
 skinparam shadowing false
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
 skinparam linetype ortho
 
-title django-inference — architecture (détail des classes)
+title inference — architecture (détail des classes)
 
 top to bottom direction
 

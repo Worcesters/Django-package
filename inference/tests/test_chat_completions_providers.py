@@ -7,11 +7,11 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from inference.exceptions import InferenceError, ParseError, ProviderAPIError
-from inference.parsers import parse_chat_completions_response
-from inference.providers.mistral import MistralProvider
-from inference.providers.openai import OpenAIProvider
-from inference.services import complete
+from app.exceptions import InferenceError, ParseError, ProviderAPIError
+from app.parsers import parse_chat_completions_response
+from app.providers.mistral import MistralProvider
+from app.providers.openai import OpenAIProvider
+from app.services import complete
 
 CHAT_COMPLETIONS_RESPONSE = {
     "id": "chatcmpl-test",
@@ -82,7 +82,7 @@ def test_chat_provider_requires_base_url_and_api_key(
         provider.complete([{"role": "user", "content": "Hi"}])
 
 
-@patch("inference.providers.chat_completions.httpx.post")
+@patch("app.providers.chat_completions.httpx.post")
 def test_openai_provider_complete(mock_post: object) -> None:
     mock_response = httpx.Response(
         200,
@@ -110,7 +110,7 @@ def test_openai_provider_complete(mock_post: object) -> None:
     assert mock_post.call_args.args[0] == "https://api.openai.com/v1/chat/completions"
 
 
-@patch("inference.providers.chat_completions.httpx.post")
+@patch("app.providers.chat_completions.httpx.post")
 def test_mistral_provider_complete(mock_post: object) -> None:
     mock_response = httpx.Response(
         200,
@@ -132,7 +132,7 @@ def test_mistral_provider_complete(mock_post: object) -> None:
     assert mock_post.call_args.args[0] == "https://api.mistral.ai/v1/chat/completions"
 
 
-@patch("inference.providers.chat_completions.httpx.post")
+@patch("app.providers.chat_completions.httpx.post")
 def test_openai_provider_api_error(mock_post: object) -> None:
     mock_response = httpx.Response(
         401,
@@ -153,12 +153,12 @@ def test_openai_provider_api_error(mock_post: object) -> None:
 
 
 @pytest.mark.django_db
-@patch("inference.providers.chat_completions.httpx.post")
+@patch("app.providers.chat_completions.httpx.post")
 def test_complete_service_with_openai(mock_post: object, settings: object) -> None:
     settings.INFERENCE_DEFAULT_PROVIDER = "openai"
     settings.INFERENCE_PROVIDERS = {
         "openai": {
-            "backend": "inference.providers.openai.OpenAIProvider",
+            "backend": "app.providers.openai.OpenAIProvider",
             "model": "gpt-4o",
             "base_url": "https://api.openai.com/v1",
             "api_key": "sk-test",

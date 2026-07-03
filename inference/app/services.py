@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from inference.factory import llm_factory
-from inference.schemas import CompletionResult
-from inference.selectors import get_provider_config
+from app.factory import llm_factory
+from app.schemas import CompletionResult
+from app.selectors import get_provider_config
 
 
 def complete(

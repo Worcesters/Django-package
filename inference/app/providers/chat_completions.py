@@ -6,15 +6,15 @@ from typing import Any
 
 import httpx
 
-from inference.exceptions import (
+from app.exceptions import (
     InferenceError,
     ProviderAPIError,
     ProviderConnectionError,
     RateLimitError,
 )
-from inference.parsers import parse_chat_completions_response
-from inference.providers.base import BaseLLMProvider
-from inference.schemas import CompletionResult
+from app.parsers import parse_chat_completions_response
+from app.providers.base import BaseLLMProvider
+from app.schemas import CompletionResult
 
 CHAT_ENDPOINT = "/chat/completions"
 

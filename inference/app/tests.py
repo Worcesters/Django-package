@@ -1,9 +1,9 @@
 """Tests Pytest pour inference."""
 
-from inference.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
-from inference.factory import llm_factory
-from inference.cli import build_parser
-from inference.preview import build_kroki_preview_url, load_puml
+from app.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
+from app.factory import llm_factory
+from app.cli import build_parser
+from app.preview import build_kroki_preview_url, load_puml
 
 
 def test_load_puml_returns_startuml_block() -> None:

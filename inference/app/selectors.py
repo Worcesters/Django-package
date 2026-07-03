@@ -7,14 +7,14 @@ from typing import Any
 
 from django.conf import settings
 
-from inference.conf import (
+from app.conf import (
     DEFAULT_PROVIDER_REGISTRY,
     SETTING_DEFAULT_PROVIDER,
     SETTING_PROVIDERS,
 )
-from inference.exceptions import ProviderNotFoundError
-from inference.factory import llm_factory
-from inference.schemas import LLMConfig
+from app.exceptions import ProviderNotFoundError
+from app.factory import llm_factory
+from app.schemas import LLMConfig
 
 
 def _get_providers_setting() -> dict[str, Any]:

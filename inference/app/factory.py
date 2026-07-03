@@ -5,9 +5,9 @@ from __future__ import annotations
 import importlib
 from typing import Any
 
-from inference.conf import DEFAULT_PROVIDER_REGISTRY
-from inference.exceptions import ProviderNotFoundError
-from inference.providers.base import BaseLLMProvider
+from app.conf import DEFAULT_PROVIDER_REGISTRY
+from app.exceptions import ProviderNotFoundError
+from app.providers.base import BaseLLMProvider
 
 
 class LLMFactory:

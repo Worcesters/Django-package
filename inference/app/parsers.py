@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from inference.exceptions import ParseError
-from inference.schemas import CompletionResult, TokenUsage
+from app.exceptions import ParseError
+from app.schemas import CompletionResult, TokenUsage
 
 
 def parse_ollama_response(raw: dict[str, Any], *, model: str) -> CompletionResult:

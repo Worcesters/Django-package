@@ -1,4 +1,4 @@
-# django-inference
+# inference
 
 Package Django installable via **uv** depuis Git.
 
@@ -8,14 +8,14 @@ Apres avoir pousse ce depot sur GitHub/GitLab :
 
 ```powershell
 cd chemin/vers/votre/projet-django
-uv add "django-inference @ git+https://github.com/VOTRE_ORG/django-inference.git"
+uv add "inference @ git+https://github.com/VOTRE_ORG/package_llm_inference.git"
 ```
 
 Branche ou tag specifique :
 
 ```powershell
-uv add "django-inference @ git+https://github.com/VOTRE_ORG/django-inference.git@main"
-uv add "django-inference @ git+https://github.com/VOTRE_ORG/django-inference.git@v0.1.0"
+uv add "inference @ git+https://github.com/VOTRE_ORG/package_llm_inference.git@main"
+uv add "inference @ git+https://github.com/VOTRE_ORG/package_llm_inference.git@v0.1.0"
 ```
 
 ## CLI `inference`
@@ -33,7 +33,7 @@ uv run inference --preview --no-open
 
 ### Preview architecture
 
-Le package embarque un diagramme PlantUML (`inference/docs/package_archi.puml`).
+Le package embarque un diagramme PlantUML (`app/docs/package_archi.puml`).
 
 Avec `--preview` :
 
@@ -72,14 +72,14 @@ Constantes Django documentees dans `--help` :
 ### Developpement local (editable)
 
 ```powershell
-uv add --editable ./chemin/vers/django-inference
+uv add --editable ./chemin/vers/inference
 uv run inference --preview
 ```
 
 ## Utilisation Python (inférence)
 
 ```python
-from inference.services import complete
+from app.services import complete
 
 result = complete(messages=[{"role": "user", "content": "Bonjour"}])
 print(result.text)
@@ -92,13 +92,13 @@ Dans `config/settings/base.py` :
 ```python
 INSTALLED_APPS = [
     # ...
-    "inference.apps.InferenceConfig",
+    "app.apps.InferenceConfig",
 ]
 
 INFERENCE_DEFAULT_PROVIDER = "llama"
 INFERENCE_PROVIDERS = {
     "llama": {
-        "backend": "inference.providers.ollama.OllamaProvider",
+        "backend": "app.providers.ollama.OllamaProvider",
         "base_url": "http://ton-ollama:11434",
         "model": "llama3.2",
     },
@@ -109,11 +109,11 @@ Snippet complet : `uv run inference --help`
 
 ## Structure
 
-- `inference/cli.py` — commande `uv run inference`
-- `inference/preview.py` — logique preview PlantUML
-- `inference/services.py` — `complete()` (inférence texte)
-- `inference/conf.py` — constantes `INFERENCE_*`
-- `inference/factory.py` — `LLMFactory`
-- `inference/providers/` — `OpenAIProvider`, `MistralProvider`, `OllamaProvider`
-- `inference/docs/package_archi.puml` — diagramme d'architecture
+- `app/cli.py` — commande `uv run inference`
+- `app/preview.py` — logique preview PlantUML
+- `app/services.py` — `complete()` (inférence texte)
+- `app/conf.py` — constantes `INFERENCE_*`
+- `app/factory.py` — `LLMFactory`
+- `app/providers/` — `OpenAIProvider`, `MistralProvider`, `OllamaProvider`
+- `app/docs/package_archi.puml` — diagramme d'architecture
 - `pyproject.toml` — metadata pip/uv (hatchling)

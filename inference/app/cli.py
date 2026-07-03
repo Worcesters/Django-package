@@ -5,14 +5,14 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from inference.conf import format_settings_help
-from inference.preview import KROKI_BASE_URL, run_preview
+from app.conf import format_settings_help
+from app.preview import KROKI_BASE_URL, run_preview
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="inference",
-        description="CLI django-inference : configuration et preview d'architecture.",
+        description="CLI inference : configuration et preview d'architecture.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=format_settings_help(),
     )

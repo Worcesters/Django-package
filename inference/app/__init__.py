@@ -1,0 +1,1 @@
+"""Application Django app (package installable inference)."""

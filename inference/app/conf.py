@@ -1,4 +1,4 @@
-"""Constantes de configuration Django pour django-inference."""
+"""Constantes de configuration Django pour le package inference."""
 
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ SETTING_RETRY = "INFERENCE_RETRY"
 
 # Registry par défaut (chemins de classes provider)
 DEFAULT_PROVIDER_REGISTRY: dict[str, str] = {
-    "openai": "inference.providers.openai.OpenAIProvider",
-    "mistral": "inference.providers.mistral.MistralProvider",
-    "llama": "inference.providers.ollama.OllamaProvider",
+    "openai": "app.providers.openai.OpenAIProvider",
+    "mistral": "app.providers.mistral.MistralProvider",
+    "llama": "app.providers.ollama.OllamaProvider",
 }
 
 
@@ -91,5 +91,5 @@ Variables d'environnement (.env) :
 
 Installe aussi l'app dans INSTALLED_APPS :
 
-  "inference.apps.InferenceConfig",
+  "app.apps.InferenceConfig",
 """.strip()

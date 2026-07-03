@@ -18,7 +18,7 @@ KROKI_RENDER_URL = f"{KROKI_BASE_URL}/plantuml/svg"
 
 def load_puml() -> str:
     """Charge le diagramme PlantUML embarqué dans le package."""
-    puml_path = resources.files("inference").joinpath(PUML_RELATIVE_PATH)
+    puml_path = resources.files("app").joinpath(PUML_RELATIVE_PATH)
     return puml_path.read_text(encoding="utf-8")
 
 
@@ -58,7 +58,7 @@ def run_preview(
         preview_url = build_kroki_preview_url(puml, kroki_base_url=kroki_base_url)
     except FileNotFoundError:
         print(
-            f"Erreur : {PUML_RELATIVE_PATH} introuvable dans le package inference.",
+            f"Erreur : {PUML_RELATIVE_PATH} introuvable dans le package app.",
             file=sys.stderr,
         )
         raise SystemExit(1) from None
