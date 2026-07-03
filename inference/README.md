@@ -117,12 +117,113 @@ uv run inference --preview
 
 ## Utilisation Python (inférence)
 
+### Appel direct
+
 ```python
 from completion.services import complete
 
 result = complete(messages=[{"role": "user", "content": "Bonjour"}])
 print(result.text)
 ```
+
+### Exemple minimal dans ton app métier
+
+`apps/assistant/services.py` :
+
+```python
+from __future__ import annotations
+
+from completion.exceptions import InferenceError
+from completion.services import complete
+
+
+def ask_assistant(*, question: str, provider: str | None = None) -> str:
+    """Pose une question au LLM et retourne le texte de réponse."""
+    result = complete(
+        messages=[{"role": "user", "content": question}],
+        provider=provider,  # None = INFERENCE_DEFAULT_PROVIDER
+    )
+    return result.text
+```
+
+Appel depuis une vue DRF (orchestration seulement) :
+
+```python
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.assistant.services import ask_assistant
+from completion.exceptions import InferenceError
+
+
+class AskView(APIView):
+    def post(self, request):
+        question = request.data.get("question", "").strip()
+        if not question:
+            return Response({"error": "question requise"}, status=400)
+
+        try:
+            answer = ask_assistant(question=question)
+        except InferenceError as exc:
+            return Response(
+                {"error": exc.message, "code": exc.code},
+                status=502,
+            )
+
+        return Response({"answer": answer})
+```
+
+### Exemple avec historique de conversation
+
+```python
+from completion.services import complete
+
+
+def chat_with_context(
+    *,
+    user_message: str,
+    history: list[dict[str, str]] | None = None,
+) -> str:
+    messages = list(history or [])
+    messages.append({"role": "user", "content": user_message})
+    result = complete(messages=messages)
+    return result.text
+```
+
+Usage :
+
+```python
+history = [
+    {"role": "user", "content": "Je m'appelle Julien."},
+    {"role": "assistant", "content": "Enchanté Julien !"},
+]
+reply = chat_with_context(
+    user_message="Comment je m'appelle ?",
+    history=history,
+)
+```
+
+### Ce que tu récupères
+
+`complete()` retourne un `CompletionResult` :
+
+```python
+result = complete(messages=[{"role": "user", "content": "Bonjour"}])
+
+result.text            # texte généré
+result.model           # ex. "llama3.2"
+result.usage.total_tokens
+result.finish_reason   # ex. "stop"
+result.raw             # réponse brute de l'API
+```
+
+### Points importants
+
+- **Import** : `from completion.services import complete` — c'est le package **inference** installé (module `completion`), pas ton dossier `apps/`.
+- **`provider=None`** → utilise `INFERENCE_DEFAULT_PROVIDER` de tes settings.
+- **`provider="openai"`** → utilise l'entrée correspondante dans `INFERENCE_PROVIDERS`.
+- **Pas besoin de `django.setup()`** dans ton service : Django est déjà initialisé via `runserver`, Celery, ou `manage.py`.
+- **Gestion d'erreurs** : attrape `InferenceError` (ou les sous-classes : `ProviderAPIError`, `ProviderConnectionError`, etc.).
 
 ## Configuration Django
 

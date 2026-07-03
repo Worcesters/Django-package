@@ -125,3 +125,16 @@ def test_llm_factory_resolves_openai_provider() -> None:
         cache_instance=False,
     )
     assert provider.provider_id == "openai"
+
+
+def test_llm_factory_accepts_legacy_app_backend_path() -> None:
+    llm_factory.register(
+        "legacy_mistral",
+        "app.providers.mistral.MistralProvider",
+    )
+    provider = llm_factory.get_provider(
+        "legacy_mistral",
+        {"model": "mistral-small"},
+        cache_instance=False,
+    )
+    assert provider.provider_id == "mistral"

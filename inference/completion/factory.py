@@ -9,6 +9,15 @@ from completion.conf import DEFAULT_PROVIDER_REGISTRY
 from completion.exceptions import ProviderNotFoundError
 from completion.providers.base import BaseLLMProvider
 
+_LEGACY_MODULE_PREFIX = "app."
+
+
+def _normalize_provider_path(path: str) -> str:
+    """Compatibilité : anciens chemins `app.providers.*` → `completion.providers.*`."""
+    if path.startswith(_LEGACY_MODULE_PREFIX):
+        return "completion." + path[len(_LEGACY_MODULE_PREFIX) :]
+    return path
+
 
 class LLMFactory:
     """
@@ -28,7 +37,7 @@ class LLMFactory:
 
     def register(self, name: str, provider_class_path: str) -> None:
         """Permet d'ajouter ou surcharger un provider (settings ou app métier)."""
-        self._registry[name.lower()] = provider_class_path
+        self._registry[name.lower()] = _normalize_provider_path(provider_class_path)
         self._instances.pop(name.lower(), None)
 
     def list_providers(self) -> list[str]:
@@ -43,7 +52,7 @@ class LLMFactory:
         Charge la classe provider à partir du registry.
         """
 
-        path = self._registry.get(name.lower())
+        path = _normalize_provider_path(self._registry.get(name.lower(), ""))
         if not path:
             raise ProviderNotFoundError(
                 f"Le provider '{name}' n'est pas supporté. "
