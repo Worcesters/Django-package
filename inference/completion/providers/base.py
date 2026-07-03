@@ -9,11 +9,10 @@ from completion.schemas import CompletionResult
 
 
 class BaseLLMProvider(ABC):
+    """Base class for all LLM providers."""
     provider_id: str
-
-    def __init__(self, config: dict[str, Any]) -> None:
-        self.config = config
+    config: dict[str, Any]
 
     @abstractmethod
     def complete(self, messages: list[dict[str, str]]) -> CompletionResult:
-        """Envoie une requête de completion au provider."""
+        """Send a completion request to the provider."""

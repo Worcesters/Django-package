@@ -1,0 +1,348 @@
+@startuml rag-package-classes
+!theme plain
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title rag — architecture package (conception)
+
+top to bottom direction
+
+' ===== schemas =====
+package "schemas.py" as pkg_schemas {
+  class Chunk <<dataclass>> {
+    +text: str
+    +index: int
+    +metadata: dict
+    +source_id: str | None
+  }
+
+  class EmbedConfig <<dataclass>> {
+    +embedder: str
+    +model: str
+    +api_key: str | None
+    +base_url: str | None
+    +dimensions: int
+    +timeout: int
+    +extra: dict
+  }
+
+  class StoreConfig <<dataclass>> {
+    +store: str
+    +collection: str
+    +dimensions: int
+    +connection: dict
+    +extra: dict
+  }
+
+  class ChunkingConfig <<dataclass>> {
+    +strategy: str
+    +chunk_size: int
+    +chunk_overlap: int
+    +separators: list[str]
+    +words_per_chunk: int | None
+  }
+
+  class EmbeddingResult <<dataclass>> {
+    +vector: list[float]
+    +model: str
+    +dimensions: int
+    +usage: dict
+    +raw: dict
+  }
+
+  class RetrievedChunk <<dataclass>> {
+    +text: str
+    +score: float
+    +metadata: dict
+    +chunk_id: str | None
+    +source_id: str | None
+  }
+
+  class IndexResult <<dataclass>> {
+    +chunks_indexed: int
+    +collection: str
+    +source_id: str | None
+  }
+}
+
+' ===== conf =====
+package "conf.py" as pkg_conf {
+  class RagSettings <<constants>> {
+    RAG_DEFAULT_EMBEDDER
+    RAG_EMBEDDERS
+    RAG_DEFAULT_STORE
+    RAG_VECTOR_STORES
+    RAG_CHUNKING
+    RAG_RETRIEVAL
+    RAG_PROMPT_TEMPLATE
+  }
+}
+
+' ===== selectors =====
+package "selectors.py" as pkg_selectors {
+  class RagSelectors {
+    +get_embedder_config(name): EmbedConfig
+    +get_store_config(name): StoreConfig
+    +get_chunking_config(): ChunkingConfig
+    +get_retrieval_defaults(): dict
+    +list_available_embedders(): list[str]
+    +list_available_stores(): list[str]
+    -_get_embedders_setting(): dict
+    -_get_stores_setting(): dict
+  }
+}
+
+' ===== chunkers =====
+package "chunkers.py" as pkg_chunkers {
+  class TextChunker {
+    +chunk_text(text, config): list[Chunk]
+    -_chunk_fixed_size(text, config): list[Chunk]
+    -_chunk_by_sentence(text, config): list[Chunk]
+    -_chunk_by_paragraph(text, config): list[Chunk]
+    -_chunk_by_word(text, config): list[Chunk]
+  }
+}
+
+' ===== services =====
+package "services.py" as pkg_services {
+  class RagServices {
+    +index_text(text, metadata, collection): IndexResult
+    +index_document(text, source_id, metadata, collection): IndexResult
+    +retrieve(query, top_k, filters, collection): list[RetrievedChunk]
+  }
+
+  class RagPromptBuilder {
+    +build_rag_messages(query, chunks, template): list[dict]
+    +build_context(chunks): str
+  }
+}
+
+' ===== factories =====
+package "factory.py" as pkg_factory {
+  class EmbedderFactory {
+    -_registry: dict[str, str]
+    -_instances: dict[str, BaseEmbedder]
+    +register(name, class_path): None
+    +get_embedder(name, config): BaseEmbedder
+    -_get_embedder_class(name): type
+  }
+
+  class VectorStoreFactory {
+    -_registry: dict[str, str]
+    -_instances: dict[str, BaseVectorStore]
+    +register(name, class_path): None
+    +get_store(name, config): BaseVectorStore
+    -_get_store_class(name): type
+  }
+
+  class embedder_factory <<singleton>>
+  class store_factory <<singleton>>
+}
+
+' ===== embedders =====
+package "embedders" as pkg_embedders {
+  abstract class BaseEmbedder {
+    +embedder_id: str
+    +config: dict
+    +__init__(config): None
+    +{abstract} embed(text): EmbeddingResult
+    +{abstract} embed_batch(texts): list[EmbeddingResult]
+  }
+
+  class OpenAIEmbedder {
+    +embedder_id = openai
+    EMBED_ENDPOINT = embeddings
+    +embed(text): EmbeddingResult
+    +embed_batch(texts): list[EmbeddingResult]
+  }
+
+  class OllamaEmbedder {
+    +embedder_id = ollama
+    EMBED_ENDPOINT = api/embed
+    +embed(text): EmbeddingResult
+    +embed_batch(texts): list[EmbeddingResult]
+  }
+
+  class MistralEmbedder {
+    +embedder_id = mistral
+    +embed(text): EmbeddingResult
+    +embed_batch(texts): list[EmbeddingResult]
+  }
+
+  BaseEmbedder <|-- OpenAIEmbedder
+  BaseEmbedder <|-- OllamaEmbedder
+  BaseEmbedder <|-- MistralEmbedder
+}
+
+' ===== stores =====
+package "stores" as pkg_stores {
+  abstract class BaseVectorStore {
+    +store_id: str
+    +config: dict
+    +__init__(config): None
+    +{abstract} upsert(chunks, vectors, collection): int
+    +{abstract} search(vector, top_k, filters, collection): list[RetrievedChunk]
+    +{abstract} delete_by_metadata(filters, collection): int
+    +{abstract} ensure_collection(collection, dimensions): None
+  }
+
+  class PgVectorStore {
+    +store_id = pgvector
+    +upsert(chunks, vectors, collection): int
+    +search(vector, top_k, filters, collection): list[RetrievedChunk]
+    +delete_by_metadata(filters, collection): int
+    -_get_connection(): Connection
+  }
+
+  class QdrantStore {
+    +store_id = qdrant
+    +upsert(chunks, vectors, collection): int
+    +search(vector, top_k, filters, collection): list[RetrievedChunk]
+  }
+
+  class InMemoryStore {
+    +store_id = memory
+    +upsert(chunks, vectors, collection): int
+    +search(vector, top_k, filters, collection): list[RetrievedChunk]
+  }
+
+  BaseVectorStore <|-- PgVectorStore
+  BaseVectorStore <|-- QdrantStore
+  BaseVectorStore <|-- InMemoryStore
+}
+
+' ===== exceptions =====
+package "exceptions.py" as pkg_errors {
+  abstract class RagError {
+    +code: str
+    +message: str
+    +component: str | None
+  }
+
+  class EmbedderNotFoundError
+  class StoreNotFoundError
+  class EmbeddingAPIError
+  class StoreConnectionError
+  class ChunkingError
+  class RetrievalError
+  class DimensionMismatchError
+
+  RagError <|-- EmbedderNotFoundError
+  RagError <|-- StoreNotFoundError
+  RagError <|-- EmbeddingAPIError
+  RagError <|-- StoreConnectionError
+  RagError <|-- ChunkingError
+  RagError <|-- RetrievalError
+  RagError <|-- DimensionMismatchError
+}
+
+' ===== package externe (inference) =====
+package "completion (package inference)" as pkg_inference #LightBlue {
+  class InferenceServices <<external>> {
+    +complete(messages, provider): CompletionResult
+  }
+}
+
+' ===== projet hôte =====
+package "projet hôte (apps/)" as pkg_host #LightYellow {
+  class HostRagOrchestrator <<service métier>> {
+    +ask_with_rag(question, user): str
+    -retrieve_context(question): list[RetrievedChunk]
+    -generate_answer(question, chunks): str
+  }
+}
+
+' ----- Flux indexation -----
+RagSettings -down-> RagSelectors : lit settings
+RagSelectors -down-> EmbedConfig : construit
+RagSelectors -down-> StoreConfig : construit
+RagSelectors -down-> ChunkingConfig : construit
+
+RagServices -down-> TextChunker : chunk_text()
+TextChunker -down-> Chunk : produit
+
+RagServices -down-> embedder_factory : get_embedder()
+embedder_factory -down-> BaseEmbedder : instancie
+BaseEmbedder -down-> EmbeddingResult : vecteur
+
+RagServices -down-> store_factory : get_store()
+store_factory -down-> BaseVectorStore : instancie
+BaseVectorStore -down-> IndexResult : persiste
+
+' ----- Flux retrieval -----
+RagServices -down-> BaseEmbedder : embed(query)
+BaseEmbedder -down-> EmbeddingResult
+RagServices -down-> BaseVectorStore : search(vector)
+BaseVectorStore -down-> RetrievedChunk : top_k
+
+' ----- Flux RAG complet (hôte) -----
+HostRagOrchestrator -down-> RagServices : retrieve()
+HostRagOrchestrator -down-> RagPromptBuilder : build_rag_messages()
+HostRagOrchestrator -down-> InferenceServices : complete()
+
+RagServices ..> RagPromptBuilder : optionnel
+
+' ----- Erreurs -----
+BaseEmbedder ..> RagError : lève
+BaseVectorStore ..> RagError : lève
+TextChunker ..> RagError : lève
+RagSelectors ..> RagError : lève
+
+' ===== Notes settings =====
+note bottom of RagSettings
+  Défini dans config/settings/base.py :
+
+  RAG_DEFAULT_EMBEDDER = "ollama"
+  RAG_EMBEDDERS = {
+    "ollama": { backend, model, base_url, dimensions },
+    "openai": { backend, model, base_url, api_key_env, dimensions }
+  }
+
+  RAG_DEFAULT_STORE = "pgvector"
+  RAG_VECTOR_STORES = {
+    "pgvector": { backend, collection, dimensions },
+    "qdrant": { backend, url, collection, api_key_env },
+    "memory": { backend }
+  }
+
+  RAG_CHUNKING = {
+    strategy: fixed_size | sentence | paragraph | word,
+    chunk_size, chunk_overlap, separators
+  }
+
+  RAG_RETRIEVAL = { top_k, min_score }
+  RAG_PROMPT_TEMPLATE = "{context} / {question}"
+end note
+
+note right of TextChunker
+  Le chunking se fait AVANT embed.
+  Pas de mode "lettre par lettre".
+  Stratégies : taille fixe, phrase,
+  paragraphe, mot (rare).
+end note
+
+note right of PgVectorStore
+  Réutilise souvent DATABASES Django
+  + extension pgvector.
+  Table type : rag_chunk(vector, text, metadata)
+end note
+
+note right of InferenceServices
+  Hors package rag.
+  Génération finale uniquement.
+  Depuis : completion.services.complete()
+end note
+
+note as N_scope
+  **Hors scope v1**
+  hybrid search (BM25 + vecteur)
+  reranker, multi-tenant ACL
+  parsers PDF/DOCX, Celery ingest
+  stream(), modèles Django métier
+end note
+
+N_scope -[hidden]left- pkg_errors
+
+@enduml
