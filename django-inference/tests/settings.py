@@ -1,0 +1,26 @@
+"""Settings Django minimaux pour les tests du package."""
+
+SECRET_KEY = "test-secret-key"
+INSTALLED_APPS = [
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "rest_framework",
+    "inference.apps.InferenceConfig",
+]
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:",
+    }
+}
+ROOT_URLCONF = "tests.urls"
+USE_TZ = True
+
+INFERENCE_DEFAULT_PROVIDER = "openai"
+INFERENCE_PROVIDERS = {
+    "openai": {
+        "backend": "inference.providers.openai.OpenAIProvider",
+        "model": "gpt-4o",
+        "api_key_env": "OPENAI_API_KEY",
+    },
+}

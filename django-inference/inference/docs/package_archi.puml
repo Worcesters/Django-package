@@ -1,0 +1,110 @@
+@startuml django-inference-classes
+!theme plain
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+title Modèle de classes — couche inference
+
+abstract class LLMProvider {
+  +provider_id: str
+  +complete(messages, config): CompletionResult
+  +stream(messages, config): Iterator[StreamChunk]
+  +embed(texts, config): list[Vector]
+}
+
+class OpenAIProvider {
+  +complete()
+  +stream()
+  +embed()
+}
+
+class OllamaProvider {
+  +complete()
+  +stream()
+}
+
+class AnthropicProvider {
+  +complete()
+  +stream()
+}
+
+class ProviderRegistry {
+  -_providers: dict[str, LLMProvider]
+  +register(name, provider)
+  +get(name): LLMProvider
+  +list_providers(): list[str]
+}
+
+class LLMConfig {
+  +provider: str
+  +model: str
+  +api_key: str | None
+  +base_url: str | None
+  +temperature: float
+  +max_tokens: int
+  +timeout: int
+  +extra: dict
+}
+
+class ResponseParser {
+  +parse_openai(raw): CompletionResult
+  +parse_ollama(raw): CompletionResult
+  +parse_anthropic(raw): CompletionResult
+}
+
+class CompletionResult {
+  +text: str
+  +model: str
+  +usage: TokenUsage
+  +raw: dict
+  +finish_reason: str
+}
+
+class TokenUsage {
+  +prompt_tokens: int
+  +completion_tokens: int
+  +total_tokens: int
+}
+
+abstract class InferenceError {
+  +code: str
+  +message: str
+  +provider: str | None
+}
+
+class ProviderNotFoundError
+class ProviderConnectionError
+class ProviderAPIError
+class ParseError
+class RateLimitError
+
+LLMProvider <|-- OpenAIProvider
+LLMProvider <|-- OllamaProvider
+LLMProvider <|-- AnthropicProvider
+
+ProviderRegistry o--> LLMProvider
+LLMProvider ..> LLMConfig
+LLMProvider ..> ResponseParser
+ResponseParser ..> CompletionResult
+CompletionResult *-- TokenUsage
+
+InferenceError <|-- ProviderNotFoundError
+InferenceError <|-- ProviderConnectionError
+InferenceError <|-- ProviderAPIError
+InferenceError <|-- ParseError
+InferenceError <|-- RateLimitError
+
+note right of LLMProvider
+  Chaque provider encapsule
+  HTTP/SDK + mapping erreurs
+end note
+
+note bottom of ProviderRegistry
+  Alimenté par settings :
+  INFERENCE_PROVIDERS = {
+    "openai": {...},
+    "ollama": {...}
+  }
+end note
+
+@enduml
