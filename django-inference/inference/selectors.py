@@ -34,7 +34,7 @@ def get_provider_config(provider_name: str | None = None) -> LLMConfig:
     if not providers:
         msg = (
             f"{SETTING_PROVIDERS} est absent ou vide dans les settings Django. "
-            "Lance `uv run inference-preview --help` pour le snippet."
+            "Lance `uv run inference --help` pour le snippet."
         )
         raise ProviderNotFoundError(msg)
 

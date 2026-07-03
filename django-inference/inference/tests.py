@@ -2,7 +2,8 @@
 
 from inference.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
 from inference.factory import llm_factory
-from inference.preview import build_kroki_preview_url, build_parser, load_puml
+from inference.cli import build_parser
+from inference.preview import build_kroki_preview_url, load_puml
 
 
 def test_load_puml_returns_startuml_block() -> None:
@@ -23,6 +24,13 @@ def test_help_includes_settings_constants() -> None:
     assert SETTING_DEFAULT_PROVIDER in help_text
     assert SETTING_PROVIDERS in help_text
     assert "OPENAI_API_KEY" in help_text
+    assert "--preview" in help_text
+
+
+def test_cli_preview_flag_parsing() -> None:
+    args = build_parser().parse_args(["--preview", "--no-open"])
+    assert args.preview is True
+    assert args.no_open is True
 
 
 def test_format_settings_help_lists_default_providers() -> None:

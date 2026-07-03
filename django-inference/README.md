@@ -18,57 +18,45 @@ uv add "django-inference @ git+https://github.com/VOTRE_ORG/django-inference.git
 uv add "django-inference @ git+https://github.com/VOTRE_ORG/django-inference.git@v0.1.0"
 ```
 
-## Preview architecture (PlantUML → SVG en ligne)
-
-Le package embarque un diagramme PlantUML (`inference/docs/package_archi.puml`). Apres installation, tu peux le visualiser **directement dans le navigateur** sans creer de fichier dans ton projet.
-
-### Utilisation rapide
+## CLI `inference`
 
 ```powershell
-uv add "django-inference @ git+https://github.com/VOTRE_ORG/django-inference.git"
-uv run inference-preview
+# Aide + snippet des constantes Django INFERENCE_*
+uv run inference --help
+
+# Preview architecture (PlantUML → SVG en ligne, navigateur)
+uv run inference --preview
+
+# Preview sans ouvrir le navigateur (URL Kroki dans le terminal)
+uv run inference --preview --no-open
 ```
 
-Ce que fait la commande :
+### Preview architecture
 
-1. Charge le `.puml` embarque dans le package installe
+Le package embarque un diagramme PlantUML (`inference/docs/package_archi.puml`).
+
+Avec `--preview` :
+
+1. Charge le `.puml` embarque
 2. Construit une **URL Kroki** (diagramme encode dans l'URL)
-3. **Ouvre le navigateur** : le SVG s'affiche en ligne via [Kroki](https://kroki.io/)
-4. Affiche l'URL dans le terminal (copiable / partageable)
+3. **Ouvre le navigateur** par defaut (sauf `--no-open`)
+4. Affiche l'URL dans le terminal
 
 **Aucun fichier n'est ecrit dans ton projet par defaut.**
 
-Exemple d'URL generee :
-
-```text
-https://kroki.io/plantuml/svg/eNp...
-```
-
-Tu peux la coller dans n'importe quel navigateur pour revoir le diagramme sans reinstaller quoi que ce soit.
-
-### Options
+Options supplementaires :
 
 ```powershell
-# Affiche seulement l'URL Kroki (sans ouvrir le navigateur)
-uv run inference-preview --no-open
-
-# Preview en ligne + copie locale optionnelle du SVG
-uv run inference-preview -o docs/architecture.svg
-
-# Kroki self-hosted (optionnel)
-uv run inference-preview --kroki-base-url https://kroki.mondomaine.local
-
-# Snippet des constantes Django à ajouter dans config/settings/base.py
-uv run inference-preview --help
+uv run inference --preview -o docs/architecture.svg
+uv run inference --preview --kroki-base-url https://kroki.mondomaine.local
 ```
 
-| Option | Description |
-|--------|-------------|
-| *(aucune)* | Ouvre la preview Kroki dans le navigateur, 0 fichier local |
-| `--help` | Affiche l'aide CLI **et** le snippet `INFERENCE_*` pour les settings |
-| `--no-open` | Affiche uniquement l'URL de preview dans le terminal |
-| `-o`, `--output FICHIER` | Enregistre en plus une copie SVG sur disque |
-| `--kroki-base-url URL` | Change l'instance Kroki utilisee (defaut : `https://kroki.io`) |
+| Commande | Description |
+|----------|-------------|
+| `uv run inference --help` | Aide CLI + snippet `INFERENCE_*` pour les settings |
+| `uv run inference --preview` | Ouvre la preview Kroki dans le navigateur |
+| `uv run inference --preview --no-open` | Affiche uniquement l'URL Kroki |
+| `uv run inference --preview -o FICHIER` | Enregistre en plus une copie SVG locale |
 
 Constantes Django documentees dans `--help` :
 
@@ -76,16 +64,25 @@ Constantes Django documentees dans `--help` :
 - `INFERENCE_PROVIDERS`
 - `INFERENCE_RETRY` (optionnel)
 
-### Prerequis
+### Prerequis preview
 
-- Connexion **reseau** requise (le rendu est delegue a Kroki)
+- Connexion **reseau** requise (rendu delegue a Kroki)
 - Pas besoin de Java ni de PlantUML installe localement
 
 ### Developpement local (editable)
 
 ```powershell
 uv add --editable ./chemin/vers/django-inference
-uv run inference-preview
+uv run inference --preview
+```
+
+## Utilisation Python (inférence)
+
+```python
+from inference.services import complete
+
+result = complete(messages=[{"role": "user", "content": "Bonjour"}])
+print(result.text)
 ```
 
 ## Configuration Django
@@ -97,27 +94,26 @@ INSTALLED_APPS = [
     # ...
     "inference.apps.InferenceConfig",
 ]
+
+INFERENCE_DEFAULT_PROVIDER = "llama"
+INFERENCE_PROVIDERS = {
+    "llama": {
+        "backend": "inference.providers.ollama.OllamaProvider",
+        "base_url": "http://ton-ollama:11434",
+        "model": "llama3.2",
+    },
+}
 ```
 
-Dans `config/urls.py` :
-
-```python
-path("api/inference/", include("inference.urls")),
-```
-
-Puis :
-
-```powershell
-uv run python manage.py makemigrations inference
-uv run python manage.py migrate
-```
+Snippet complet : `uv run inference --help`
 
 ## Structure
 
-- `inference/` — app Django (models, services, selectors, serializers, views CBV)
-- `inference/conf.py` — noms des settings `INFERENCE_*` + snippet d'aide
-- `inference/factory.py` — `LLMFactory` (lazy import des providers)
+- `inference/cli.py` — commande `uv run inference`
+- `inference/preview.py` — logique preview PlantUML
+- `inference/services.py` — `complete()` (inférence texte)
+- `inference/conf.py` — constantes `INFERENCE_*`
+- `inference/factory.py` — `LLMFactory`
 - `inference/providers/` — `OpenAIProvider`, `MistralProvider`, `OllamaProvider`
-- `inference/docs/package_archi.puml` — diagramme d'architecture (preview CLI)
-- `inference/preview.py` — commande `inference-preview`
+- `inference/docs/package_archi.puml` — diagramme d'architecture
 - `pyproject.toml` — metadata pip/uv (hatchling)

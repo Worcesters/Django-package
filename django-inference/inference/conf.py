@@ -16,7 +16,7 @@ DEFAULT_PROVIDER_REGISTRY: dict[str, str] = {
 
 
 def format_settings_help() -> str:
-    """Texte d'aide affiché dans `inference-preview --help` (snippet settings)."""
+    """Texte d'aide affiché dans `inference --help` (snippet settings)."""
     provider_keys = ", ".join(f'"{name}"' for name in DEFAULT_PROVIDER_REGISTRY)
     return f"""
 Configuration Django (config/settings/base.py)

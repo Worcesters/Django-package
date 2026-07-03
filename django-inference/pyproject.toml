@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-inference-preview = "inference.preview:main"
+inference = "inference.cli:main"
 
 [project.optional-dependencies]
 dev = [
