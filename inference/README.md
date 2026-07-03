@@ -29,7 +29,44 @@ uv run inference --preview
 
 # Preview sans ouvrir le navigateur (URL Kroki dans le terminal)
 uv run inference --preview --no-open
+
+# Test de completion (projet Django hôte configuré)
+uv run inference --complete "Bonjour, qui es-tu ?" --settings config.settings.dev
+
+# Provider explicite (Ollama local)
+uv run inference -c "2+2 ?" --provider llama --settings config.settings.dev
 ```
+
+### Test de completion (`--complete`)
+
+La commande appelle `complete()` avec les settings Django du projet hôte (`INFERENCE_*`).
+
+**Prérequis :**
+
+1. `INFERENCE_DEFAULT_PROVIDER` et `INFERENCE_PROVIDERS` définis dans tes settings
+2. `--settings` pointant vers ton module Django (ou `DJANGO_SETTINGS_MODULE` exporté)
+3. Clé API / Ollama accessible selon le provider
+
+```powershell
+# Depuis ton projet Django (package installé via uv add)
+cd chemin/vers/votre/projet-django
+uv run inference --complete "Explique Django en une phrase." --settings config.settings.dev
+
+# Provider explicite
+uv run inference -c "Hello" --provider openai --settings config.settings.dev
+
+# Variable d'environnement à la place de --settings
+$env:DJANGO_SETTINGS_MODULE = "config.settings.dev"
+uv run inference --complete "Hello"
+```
+
+| Option | Description |
+|--------|-------------|
+| `--complete`, `-c PROMPT` | Message utilisateur envoyé au LLM |
+| `--provider NOM` | Provider dans `INFERENCE_PROVIDERS` (sinon défaut) |
+| `--settings MODULE` | Module settings Django (`config.settings.dev`) |
+
+La réponse s'affiche sur **stdout** ; métadonnées (modèle, tokens) sur **stderr**.
 
 ### Preview architecture
 
@@ -57,6 +94,8 @@ uv run inference --preview --kroki-base-url https://kroki.mondomaine.local
 | `uv run inference --preview` | Ouvre la preview Kroki dans le navigateur |
 | `uv run inference --preview --no-open` | Affiche uniquement l'URL Kroki |
 | `uv run inference --preview -o FICHIER` | Enregistre en plus une copie SVG locale |
+| `uv run inference --complete "..." --settings config.settings.dev` | Teste une completion LLM |
+| `uv run inference -c "..." --provider llama --settings ...` | Completion avec provider explicite |
 
 Constantes Django documentees dans `--help` :
 

@@ -1,9 +1,13 @@
 """Tests Pytest pour inference."""
 
+from unittest.mock import patch
+
+from app.cli import build_parser, main
+from app.complete_cmd import run_complete
 from app.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
 from app.factory import llm_factory
-from app.cli import build_parser
 from app.preview import build_kroki_preview_url, load_puml
+from app.schemas import CompletionResult, TokenUsage
 
 
 def test_load_puml_returns_startuml_block() -> None:
@@ -31,6 +35,46 @@ def test_cli_preview_flag_parsing() -> None:
     args = build_parser().parse_args(["--preview", "--no-open"])
     assert args.preview is True
     assert args.no_open is True
+
+
+def test_cli_complete_flag_parsing() -> None:
+    args = build_parser().parse_args(
+        ["--complete", "Bonjour", "--provider", "llama", "--settings", "tests.settings"]
+    )
+    assert args.complete == "Bonjour"
+    assert args.provider == "llama"
+    assert args.settings == "tests.settings"
+
+
+def test_help_includes_complete_flag() -> None:
+    help_text = build_parser().format_help()
+    assert "--complete" in help_text
+    assert "--settings" in help_text
+
+
+@patch("app.services.complete")
+@patch("app.complete_cmd.setup_django")
+def test_run_complete_prints_text(
+    mock_setup: object,
+    mock_complete: object,
+) -> None:
+    mock_complete.return_value = CompletionResult(  # type: ignore[attr-defined]
+        text="Salut !",
+        model="llama3.2",
+        usage=TokenUsage(prompt_tokens=10, completion_tokens=5, total_tokens=15),
+        finish_reason="stop",
+    )
+    result = run_complete("Bonjour", provider="llama", settings_module="tests.settings")
+    assert result.text == "Salut !"
+
+
+def test_main_rejects_complete_and_preview_together(capsys: object) -> None:
+    try:
+        main(["--complete", "x", "--preview", "--settings", "tests.settings"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected SystemExit")
 
 
 def test_format_settings_help_lists_default_providers() -> None:
