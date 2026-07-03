@@ -25,5 +25,6 @@ def complete(
             "timeout": config.timeout,
             "extra": config.extra,
         },
+        cache_instance=False,
     )
     return llm.complete(messages)

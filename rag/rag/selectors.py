@@ -73,7 +73,7 @@ def get_embedder_config(embedder_name: str | None = None) -> EmbedConfig:
 
     backend = raw.get("backend", DEFAULT_EMBEDDER_REGISTRY.get(name))
     if backend:
-        embedder_factory.register(name, backend)
+        embedder_factory.register(name, str(backend))
 
     return EmbedConfig(
         embedder=name,
@@ -110,7 +110,7 @@ def get_store_config(store_name: str | None = None) -> StoreConfig:
 
     backend = raw.get("backend", DEFAULT_STORE_REGISTRY.get(name))
     if backend:
-        store_factory.register(name, backend)
+        store_factory.register(name, str(backend))
 
     return StoreConfig(
         store=name,
@@ -125,12 +125,14 @@ def get_chunking_config() -> ChunkingConfig:
     """Lit RAG_CHUNKING ou retourne les défauts."""
     raw: dict[str, Any] = getattr(settings, SETTING_CHUNKING, {}) or {}
     separators = raw.get("separators", ["\n\n", "\n", ". ", " "])
+    words_raw = raw.get("words_per_chunk")
+    words_per_chunk = int(words_raw) if words_raw is not None else None
     return ChunkingConfig(
         strategy=str(raw.get("strategy", "fixed_size")),
         chunk_size=int(raw.get("chunk_size", 800)),
         chunk_overlap=int(raw.get("chunk_overlap", 120)),
         separators=tuple(separators),
-        words_per_chunk=raw.get("words_per_chunk"),
+        words_per_chunk=words_per_chunk,
     )
 
 

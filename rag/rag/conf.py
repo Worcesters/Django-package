@@ -49,7 +49,7 @@ Constantes requises :
 
   {SETTING_VECTOR_STORES}
       Dict des stores vectoriels :
-        - backend (str)       : chemin importable (memory, pgvector v2...)
+        - backend (str)       : chemin importable (`memory` ; `pgvector` prévu v2)
         - collection (str)    : nom de la collection
         - dimensions (int)    : doit matcher l'embedder
 

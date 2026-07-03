@@ -39,8 +39,8 @@ Constantes requises :
         - timeout (int)       : secondes, défaut 60
         - extra (dict)        : paramètres spécifiques au provider
 
-  {SETTING_RETRY}  (optionnel)
-      Politique de retry HTTP : max_attempts, backoff, retry_on.
+  {SETTING_RETRY}  (v2 — non implémenté)
+      Politique de retry HTTP prévue : max_attempts, backoff, retry_on.
 
 Providers enregistrés par défaut dans la factory : {provider_keys}
 

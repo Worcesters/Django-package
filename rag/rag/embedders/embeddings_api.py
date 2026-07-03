@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from rag.embedders.base import BaseEmbedder
-from rag.exceptions import EmbeddingAPIError, RagError, StoreConnectionError
+from rag.exceptions import EmbedderConnectionError, EmbeddingAPIError, RagError
 from rag.schemas import EmbeddingResult
 
 EMBED_ENDPOINT = "/embeddings"
@@ -44,7 +44,7 @@ class OpenAICompatibleEmbedder(BaseEmbedder):
                 timeout=timeout,
             )
         except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as exc:
-            raise StoreConnectionError(
+            raise EmbedderConnectionError(
                 f"Connexion {self.embedder_id} impossible ({base_url}).",
                 component=self.embedder_id,
             ) from exc

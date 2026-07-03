@@ -68,32 +68,31 @@ uv run inference --complete "Hello"
 
 La réponse s'affiche sur **stdout** ; métadonnées (modèle, tokens) sur **stderr**.
 
-### Preview architecture
-
-Le package embarque un diagramme PlantUML (`completion/docs/package_archi.puml`).
+### Preview architecture (interactive)
 
 Avec `--preview` :
 
-1. Charge le `.puml` embarque
-2. Construit une **URL Kroki** (diagramme encode dans l'URL)
-3. **Ouvre le navigateur** par defaut (sauf `--no-open`)
-4. Affiche l'URL dans le terminal
+1. Charge le `.puml` embarqué et le rend via **Kroki**
+2. Génère un **viewer HTML** local (zoom molette, glisser pour déplacer)
+3. **Ouvre le navigateur** sur ce viewer (sauf `--no-open`)
+4. Affiche aussi l'URL Kroki statique dans le terminal
 
-**Aucun fichier n'est ecrit dans ton projet par defaut.**
-
-Options supplementaires :
+**Contrôles du viewer :** molette = zoom · clic maintenu = pan · boutons +/- / Reset / Ajuster · double-clic = ajuster à l'écran
 
 ```powershell
+uv run inference --preview
+uv run inference --preview --no-open
 uv run inference --preview -o docs/architecture.svg
-uv run inference --preview --kroki-base-url https://kroki.mondomaine.local
+uv run inference --preview --html-output docs/architecture.html
 ```
 
 | Commande | Description |
 |----------|-------------|
 | `uv run inference --help` | Aide CLI + snippet `INFERENCE_*` pour les settings |
-| `uv run inference --preview` | Ouvre la preview Kroki dans le navigateur |
-| `uv run inference --preview --no-open` | Affiche uniquement l'URL Kroki |
+| `uv run inference --preview` | Ouvre le viewer HTML interactif (zoom/pan) |
+| `uv run inference --preview --no-open` | Affiche les chemins preview sans ouvrir le navigateur |
 | `uv run inference --preview -o FICHIER` | Enregistre en plus une copie SVG locale |
+| `uv run inference --preview --html-output FICHIER.html` | Enregistre le viewer HTML à un chemin fixe |
 | `uv run inference --complete "..." --settings config.settings.dev` | Teste une completion LLM |
 | `uv run inference -c "..." --provider llama --settings ...` | Completion avec provider explicite |
 
@@ -250,10 +249,12 @@ Snippet complet : `uv run inference --help`
 ## Structure
 
 - `completion/cli.py` — commande `uv run inference`
-- `completion/preview.py` — logique preview PlantUML
+- `completion/complete_cmd.py` — orchestration `--complete`
+- `completion/preview.py` / `preview_viewer.py` — preview PlantUML interactive
 - `completion/services.py` — `complete()` (inférence texte)
-- `completion/conf.py` — constantes `INFERENCE_*`
+- `completion/selectors.py` — lecture settings `INFERENCE_*`
 - `completion/factory.py` — `LLMFactory`
+- `completion/schemas.py` — `CompletionResult`, `LLMConfig`, `TokenUsage`
 - `completion/providers/` — `OpenAIProvider`, `MistralProvider`, `OllamaProvider`
 - `completion/docs/package_archi.puml` — diagramme d'architecture
 - `pyproject.toml` — metadata pip/uv (hatchling)

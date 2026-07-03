@@ -9,6 +9,7 @@ from rag.conf import (
     SETTING_VECTOR_STORES,
     format_settings_help,
 )
+from rag.preview_viewer import build_interactive_html
 from rag.preview import build_kroki_preview_url, load_puml
 from rag.terminal import colorize_help
 
@@ -22,6 +23,12 @@ def test_load_puml_returns_startuml_block() -> None:
 def test_build_kroki_preview_url_points_to_kroki() -> None:
     url = build_kroki_preview_url(load_puml())
     assert url.startswith("https://kroki.io/plantuml/svg/")
+
+
+def test_build_interactive_html_includes_pan_zoom_controls() -> None:
+    html_page = build_interactive_html('<svg xmlns="http://www.w3.org/2000/svg"></svg>', title="test")
+    assert "zoom-in" in html_page
+    assert "fitToView" in html_page
 
 
 def test_help_includes_rag_settings_constants() -> None:

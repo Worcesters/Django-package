@@ -32,6 +32,10 @@ class EmbeddingAPIError(RagError):
     code = "embedding_api_error"
 
 
+class EmbedderConnectionError(RagError):
+    code = "embedder_connection_error"
+
+
 class StoreConnectionError(RagError):
     code = "store_connection_error"
 

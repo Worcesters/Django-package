@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from rag.embedders.base import BaseEmbedder
-from rag.exceptions import EmbeddingAPIError, RagError, StoreConnectionError
+from rag.exceptions import EmbedderConnectionError, EmbeddingAPIError, RagError
 from rag.schemas import EmbeddingResult
 
 EMBED_ENDPOINT = "/api/embed"
@@ -37,7 +37,7 @@ class OllamaEmbedder(BaseEmbedder):
                 timeout=timeout,
             )
         except (httpx.TimeoutException, httpx.ConnectError, httpx.NetworkError) as exc:
-            raise StoreConnectionError(
+            raise EmbedderConnectionError(
                 f"Connexion Ollama impossible ({base_url}).",
                 component=self.embedder_id,
             ) from exc

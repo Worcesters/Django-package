@@ -8,6 +8,7 @@ from completion.cli import build_parser, main
 from completion.complete_cmd import run_complete
 from completion.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
 from completion.factory import llm_factory
+from completion.preview_viewer import build_interactive_html
 from completion.preview import build_kroki_preview_url, load_puml
 from completion.schemas import CompletionResult, TokenUsage
 from completion.terminal import colorize_help
@@ -32,6 +33,13 @@ def test_help_includes_settings_constants() -> None:
     assert SETTING_PROVIDERS in help_text
     assert "OPENAI_API_KEY" in help_text
     assert "--preview" in help_text
+
+
+def test_build_interactive_html_includes_pan_zoom_controls() -> None:
+    html_page = build_interactive_html('<svg xmlns="http://www.w3.org/2000/svg"></svg>', title="test")
+    assert "zoom-in" in html_page
+    assert "fitToView" in html_page
+    assert "Molette : zoom" in html_page
 
 
 def test_cli_preview_flag_parsing() -> None:

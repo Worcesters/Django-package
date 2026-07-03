@@ -188,7 +188,7 @@ package "stores" as pkg_stores {
     +{abstract} ensure_collection(collection, dimensions): None
   }
 
-  class PgVectorStore {
+  class PgVectorStore <<planned v2>> {
     +store_id = pgvector
     +upsert(chunks, vectors, collection): int
     +search(vector, top_k, filters, collection): list[RetrievedChunk]
@@ -196,7 +196,7 @@ package "stores" as pkg_stores {
     -_get_connection(): Connection
   }
 
-  class QdrantStore {
+  class QdrantStore <<planned v2>> {
     +store_id = qdrant
     +upsert(chunks, vectors, collection): int
     +search(vector, top_k, filters, collection): list[RetrievedChunk]
@@ -224,6 +224,7 @@ package "exceptions.py" as pkg_errors {
   class EmbedderNotFoundError
   class StoreNotFoundError
   class EmbeddingAPIError
+  class EmbedderConnectionError
   class StoreConnectionError
   class ChunkingError
   class RetrievalError
@@ -232,6 +233,7 @@ package "exceptions.py" as pkg_errors {
   RagError <|-- EmbedderNotFoundError
   RagError <|-- StoreNotFoundError
   RagError <|-- EmbeddingAPIError
+  RagError <|-- EmbedderConnectionError
   RagError <|-- StoreConnectionError
   RagError <|-- ChunkingError
   RagError <|-- RetrievalError
@@ -300,11 +302,10 @@ note bottom of RagSettings
     "openai": { backend, model, base_url, api_key_env, dimensions }
   }
 
-  RAG_DEFAULT_STORE = "pgvector"
+  RAG_DEFAULT_STORE = "memory"
   RAG_VECTOR_STORES = {
-    "pgvector": { backend, collection, dimensions },
-    "qdrant": { backend, url, collection, api_key_env },
-    "memory": { backend }
+    "memory": { backend, collection, dimensions }
+    ' pgvector / qdrant : v2
   }
 
   RAG_CHUNKING = {

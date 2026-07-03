@@ -56,7 +56,7 @@ def get_provider_config(provider_name: str | None = None) -> LLMConfig:
 
     backend = raw.get("backend", DEFAULT_PROVIDER_REGISTRY.get(name))
     if backend:
-        llm_factory.register(name, backend)
+        llm_factory.register(name, str(backend))
 
     return LLMConfig(
         provider=name,

@@ -23,7 +23,7 @@ uv add --editable ./chemin/vers/rag
 # Aide + snippet des constantes Django RAG_*
 uv run rag --help
 
-# Preview architecture (PlantUML → SVG via Kroki)
+# Preview architecture interactive (zoom/pan)
 uv run rag --preview
 
 # Tester l'embedder
@@ -51,8 +51,9 @@ uv run rag -r "framework Python" --settings config.settings.dev --top-k 3
 | Commande | Description |
 |----------|-------------|
 | `uv run rag --help` | Aide CLI + snippet `RAG_*` |
-| `uv run rag --preview` | Ouvre la preview Kroki |
-| `uv run rag --preview --no-open` | Affiche l'URL Kroki |
+| `uv run rag --preview` | Viewer HTML interactif (zoom molette, glisser pour pan) |
+| `uv run rag --preview --no-open` | Affiche les chemins preview sans ouvrir le navigateur |
+| `uv run rag --preview --html-output docs/archi.html` | Enregistre le viewer HTML localement |
 | `uv run rag -e "..." --settings ...` | Teste l'embedding |
 | `uv run rag -i "..." --settings ...` | Indexe un texte |
 | `uv run rag -r "..." --settings ...` | Recherche sémantique |
@@ -179,7 +180,7 @@ La granularité se configure via `RAG_CHUNKING.strategy` :
 - `rag/prompt.py` — `build_rag_messages()`
 - `rag/chunkers.py` — découpage texte
 - `rag/embedders/` — Ollama, OpenAI, Mistral
-- `rag/stores/` — InMemoryStore (pgvector v2)
+- `rag/stores/` — InMemoryStore (`pgvector` prévu v2)
 - `rag/conf.py` — constantes `RAG_*`
 - `rag/docs/package_archi.puml` — diagramme d'architecture
 

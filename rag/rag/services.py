@@ -68,6 +68,7 @@ def index_text(
     embedder_instance = embedder_factory.get_embedder(
         embed_cfg.embedder,
         _embedder_config_dict(embed_cfg),
+        cache_instance=False,
     )
     vectors = [result.vector for result in embedder_instance.embed_batch([c.text for c in enriched])]
 
@@ -77,7 +78,9 @@ def index_text(
             component=store_cfg.store,
         )
 
-    store_instance = store_factory.get_store(store_cfg.store, _store_config_dict(store_cfg))
+    store_instance = store_factory.get_store(
+        store_cfg.store, _store_config_dict(store_cfg), cache_instance=False
+    )
     store_instance.ensure_collection(target_collection, store_cfg.dimensions)
     count = store_instance.upsert(enriched, vectors, collection=target_collection)
 
@@ -109,6 +112,7 @@ def retrieve(
     embedder_instance = embedder_factory.get_embedder(
         embed_cfg.embedder,
         _embedder_config_dict(embed_cfg),
+        cache_instance=False,
     )
     query_vector = embedder_instance.embed(query).vector
 
@@ -118,7 +122,9 @@ def retrieve(
             component=store_cfg.store,
         )
 
-    store_instance = store_factory.get_store(store_cfg.store, _store_config_dict(store_cfg))
+    store_instance = store_factory.get_store(
+        store_cfg.store, _store_config_dict(store_cfg), cache_instance=False
+    )
     return store_instance.search(
         query_vector,
         top_k=k,

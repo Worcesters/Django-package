@@ -46,7 +46,7 @@ def build_parser() -> InferenceArgumentParser:
     parser.add_argument(
         "--preview",
         action="store_true",
-        help="Affiche le diagramme PlantUML embarqué (rendu SVG via Kroki).",
+        help="Affiche le diagramme PlantUML (viewer HTML zoom/pan via Kroki).",
     )
     parser.add_argument(
         "-o",
@@ -55,6 +55,13 @@ def build_parser() -> InferenceArgumentParser:
         default=None,
         metavar="FICHIER",
         help="Avec --preview : enregistre aussi le SVG localement.",
+    )
+    parser.add_argument(
+        "--html-output",
+        type=Path,
+        default=None,
+        metavar="FICHIER",
+        help="Avec --preview : chemin du viewer HTML (défaut : fichier temp).",
     )
     parser.add_argument(
         "--no-open",
@@ -85,6 +92,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.preview:
         run_preview(
             output=args.output,
+            html_output=args.html_output,
             no_open=args.no_open,
             kroki_base_url=args.kroki_base_url,
         )
