@@ -2,12 +2,8 @@
 
 from __future__ import annotations
 
-from inference.providers.base import BaseLLMProvider
-from inference.schemas import CompletionResult
+from inference.providers.chat_completions import ChatCompletionsProvider
 
 
-class OpenAIProvider(BaseLLMProvider):
+class OpenAIProvider(ChatCompletionsProvider):
     provider_id = "openai"
-
-    def complete(self, messages: list[dict[str, str]]) -> CompletionResult:
-        raise NotImplementedError("OpenAIProvider.complete() à implémenter.")

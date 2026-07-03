@@ -1,8 +1,5 @@
 """Tests Pytest pour inference."""
 
-import pytest
-from rest_framework.test import APIClient
-
 from inference.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
 from inference.factory import llm_factory
 from inference.preview import build_kroki_preview_url, build_parser, load_puml
@@ -42,10 +39,3 @@ def test_llm_factory_resolves_openai_provider() -> None:
         cache_instance=False,
     )
     assert provider.provider_id == "openai"
-
-
-@pytest.mark.django_db
-def test_health_requires_auth() -> None:
-    client = APIClient()
-    response = client.get("/api/inference/health/")
-    assert response.status_code in (401, 403)

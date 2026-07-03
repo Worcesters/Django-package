@@ -32,8 +32,8 @@ Constantes requises :
       Dict des providers disponibles. Chaque entrée accepte :
         - backend (str)       : chemin importable de la classe provider
         - model (str)         : modèle par défaut
-        - api_key_env (str)   : nom de variable d'environnement (optionnel)
-        - base_url (str)      : URL de l'API (optionnel)
+        - api_key_env (str)   : variable d'environnement pour la clé (obligatoire openai/mistral)
+        - base_url (str)      : URL de l'API (obligatoire)
         - temperature (float) : défaut 0.7
         - max_tokens (int)    : défaut 1024
         - timeout (int)       : secondes, défaut 60
@@ -70,7 +70,7 @@ Snippet à copier dans config/settings/base.py :
     "llama": {{
         "backend": "{DEFAULT_PROVIDER_REGISTRY["llama"]}",
         "model": "llama3.2",
-        "base_url": "http://localhost:11434",
+        "base_url": "http://ollama.votre-domaine.local:11434",
         "temperature": 0.7,
         "max_tokens": 1024,
         "timeout": 120,

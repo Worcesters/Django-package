@@ -2,12 +2,8 @@
 
 from __future__ import annotations
 
-from inference.providers.base import BaseLLMProvider
-from inference.schemas import CompletionResult
+from inference.providers.chat_completions import ChatCompletionsProvider
 
 
-class MistralProvider(BaseLLMProvider):
+class MistralProvider(ChatCompletionsProvider):
     provider_id = "mistral"
-
-    def complete(self, messages: list[dict[str, str]]) -> CompletionResult:
-        raise NotImplementedError("MistralProvider.complete() à implémenter.")

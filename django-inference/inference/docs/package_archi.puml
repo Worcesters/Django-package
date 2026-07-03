@@ -3,108 +3,165 @@
 skinparam shadowing false
 skinparam classAttributeIconSize 0
 
-title Modèle de classes — couche inference
+title Modèle de classes — django-inference (implémentation actuelle)
 
-abstract class LLMProvider {
-  +provider_id: str
-  +complete(messages, config): CompletionResult
-  +stream(messages, config): Iterator[StreamChunk]
-  +embed(texts, config): list[Vector]
+package "schemas.py" {
+  class LLMConfig <<dataclass>> {
+    +provider: str
+    +model: str
+    +api_key: str | None
+    +base_url: str | None
+    +temperature: float
+    +max_tokens: int
+    +timeout: int
+    +extra: dict
+  }
+
+  class CompletionResult <<dataclass>> {
+    +text: str
+    +model: str
+    +usage: TokenUsage
+    +raw: dict
+    +finish_reason: str
+  }
+
+  class TokenUsage <<dataclass>> {
+    +prompt_tokens: int
+    +completion_tokens: int
+    +total_tokens: int
+  }
+
+  CompletionResult *-- TokenUsage
 }
 
-class OpenAIProvider {
-  +complete()
-  +stream()
-  +embed()
+package "providers/" {
+  abstract class BaseLLMProvider {
+    +provider_id: str
+    +config: dict
+    +complete(messages): CompletionResult
+  }
+
+  class ChatCompletionsProvider {
+    CHAT_ENDPOINT = "/chat/completions"
+    +complete(messages): CompletionResult
+    -_resolve_base_url(): str
+    -_resolve_api_key(): str
+  }
+
+  class OpenAIProvider {
+    provider_id = "openai"
+  }
+
+  class MistralProvider {
+    provider_id = "mistral"
+  }
+
+  class OllamaProvider {
+    CHAT_ENDPOINT = "/api/chat"
+    provider_id = "llama"
+    +complete(messages): CompletionResult
+    -_resolve_base_url(): str
+    -_build_options(): dict
+  }
+
+  BaseLLMProvider <|-- ChatCompletionsProvider
+  BaseLLMProvider <|-- OllamaProvider
+  ChatCompletionsProvider <|-- OpenAIProvider
+  ChatCompletionsProvider <|-- MistralProvider
 }
 
-class OllamaProvider {
-  +complete()
-  +stream()
+package "factory.py" {
+  class LLMFactory {
+    -_registry: dict[str, str]
+    -_instances: dict[str, BaseLLMProvider]
+    +register(name, class_path)
+    +get_provider(name, config): BaseLLMProvider
+    +list_providers(): list[str]
+  }
+
+  object "llm_factory" as llm_factory_singleton
+  LLMFactory .. llm_factory_singleton
 }
 
-class AnthropicProvider {
-  +complete()
-  +stream()
+package "parsers.py" <<module>> {
+  class "parse_ollama_response()" as parse_ollama
+  class "parse_chat_completions_response()" as parse_chat
 }
 
-class ProviderRegistry {
-  -_providers: dict[str, LLMProvider]
-  +register(name, provider)
-  +get(name): LLMProvider
-  +list_providers(): list[str]
+package "selectors.py" <<module>> {
+  class "get_provider_config()" as get_config
+  class "list_available_providers()" as list_providers
 }
 
-class LLMConfig {
-  +provider: str
-  +model: str
-  +api_key: str | None
-  +base_url: str | None
-  +temperature: float
-  +max_tokens: int
-  +timeout: int
-  +extra: dict
+package "services.py" <<module>> {
+  class "complete(messages, provider?)" as complete_svc
 }
 
-class ResponseParser {
-  +parse_openai(raw): CompletionResult
-  +parse_ollama(raw): CompletionResult
-  +parse_anthropic(raw): CompletionResult
+package "exceptions.py" {
+  abstract class InferenceError {
+    +code: str
+    +message: str
+    +provider: str | None
+  }
+
+  class ProviderNotFoundError
+  class ProviderConnectionError
+  class ProviderAPIError
+  class ParseError
+  class RateLimitError
+
+  InferenceError <|-- ProviderNotFoundError
+  InferenceError <|-- ProviderConnectionError
+  InferenceError <|-- ProviderAPIError
+  InferenceError <|-- ParseError
+  InferenceError <|-- RateLimitError
 }
 
-class CompletionResult {
-  +text: str
-  +model: str
-  +usage: TokenUsage
-  +raw: dict
-  +finish_reason: str
+package "conf.py" <<module>> {
+  class "INFERENCE_DEFAULT_PROVIDER" as setting_default
+  class "INFERENCE_PROVIDERS" as setting_providers
+  class "INFERENCE_RETRY" as setting_retry
 }
 
-class TokenUsage {
-  +prompt_tokens: int
-  +completion_tokens: int
-  +total_tokens: int
-}
+' --- Flux principal ---
+complete_svc --> get_config : lit settings
+get_config --> setting_providers
+get_config ..> LLMConfig : construit
+complete_svc --> llm_factory_singleton : get_provider()
+llm_factory_singleton --> BaseLLMProvider : instancie
 
-abstract class InferenceError {
-  +code: str
-  +message: str
-  +provider: str | None
-}
+OllamaProvider ..> parse_ollama : parse réponse
+ChatCompletionsProvider ..> parse_chat : parse réponse
+parse_ollama ..> CompletionResult
+parse_chat ..> CompletionResult
 
-class ProviderNotFoundError
-class ProviderConnectionError
-class ProviderAPIError
-class ParseError
-class RateLimitError
+BaseLLMProvider ..> LLMConfig : via config dict
+BaseLLMProvider ..> InferenceError : lève
 
-LLMProvider <|-- OpenAIProvider
-LLMProvider <|-- OllamaProvider
-LLMProvider <|-- AnthropicProvider
-
-ProviderRegistry o--> LLMProvider
-LLMProvider ..> LLMConfig
-LLMProvider ..> ResponseParser
-ResponseParser ..> CompletionResult
-CompletionResult *-- TokenUsage
-
-InferenceError <|-- ProviderNotFoundError
-InferenceError <|-- ProviderConnectionError
-InferenceError <|-- ProviderAPIError
-InferenceError <|-- ParseError
-InferenceError <|-- RateLimitError
-
-note right of LLMProvider
-  Chaque provider encapsule
-  HTTP/SDK + mapping erreurs
+note right of ChatCompletionsProvider
+  OpenAI + Mistral partagent
+  l'API /chat/completions
+  (base_url + api_key obligatoires)
 end note
 
-note bottom of ProviderRegistry
-  Alimenté par settings :
+note right of OllamaProvider
+  API Ollama /api/chat
+  (base_url obligatoire, pas de clé API)
+end note
+
+note bottom of setting_providers
+  Défini dans le projet hôte :
   INFERENCE_PROVIDERS = {
-    "openai": {...},
-    "ollama": {...}
+    "openai": { base_url, model, api_key_env },
+    "mistral": { base_url, model, api_key_env },
+    "llama": { base_url, model }
   }
+end note
+
+note as N1
+  **Hors scope actuel (v2)**
+  stream(), embed(), AnthropicProvider
+  INFERENCE_RETRY (retry HTTP)
 end note
 
 @enduml

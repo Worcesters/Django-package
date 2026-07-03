@@ -11,6 +11,17 @@ from inference.providers.base import BaseLLMProvider
 
 
 class LLMFactory:
+    """
+    Factory LLM : résolution dynamique des providers (lazy import + cache).
+
+    MRO:
+    1. __init__ -> registry + instances
+    2. register -> ajout/surcharge provider
+    3. list_providers -> liste providers supportés
+    4. _get_provider_class -> chargement classe provider
+    5. get_provider -> instanciation provider
+    """
+
     def __init__(self) -> None:
         self._registry: dict[str, str] = dict(DEFAULT_PROVIDER_REGISTRY)
         self._instances: dict[str, BaseLLMProvider] = {}
@@ -21,9 +32,17 @@ class LLMFactory:
         self._instances.pop(name.lower(), None)
 
     def list_providers(self) -> list[str]:
+        """
+        Retourne la liste des providers supportés.
+        """
+
         return sorted(self._registry.keys())
 
     def _get_provider_class(self, name: str) -> type[BaseLLMProvider]:
+        """
+        Charge la classe provider à partir du registry.
+        """
+
         path = self._registry.get(name.lower())
         if not path:
             raise ProviderNotFoundError(
