@@ -84,6 +84,13 @@ Snippet à copier dans config/settings/base.py :
         "base_url": "https://api.openai.com/v1",
         "dimensions": 1536,
     }},
+    "mistral": {{
+        "backend": "{DEFAULT_EMBEDDER_REGISTRY["mistral"]}",
+        "model": "mistral-embed",
+        "api_key_env": "MISTRAL_API_KEY",
+        "base_url": "https://api.mistral.ai/v1",
+        "dimensions": 1024,
+    }},
 }}
 
 {SETTING_DEFAULT_STORE} = "memory"
@@ -95,6 +102,9 @@ Snippet à copier dans config/settings/base.py :
         "dimensions": 768,
     }},
 }}
+
+Note : dimensions du store = dimensions de l'embedder actif (ex. 768 ollama, 1536 openai, 1024 mistral).
+Embedding ≠ LLM chat : pas besoin du package inference pour --embed / --index / --retrieve.
 
 {SETTING_CHUNKING} = {{
     "strategy": "fixed_size",

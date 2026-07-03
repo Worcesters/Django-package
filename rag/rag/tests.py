@@ -53,6 +53,8 @@ def test_format_settings_help_lists_default_embedders() -> None:
     text = format_settings_help()
     assert "ollama" in text
     assert "openai" in text
+    assert "mistral" in text
+    assert "mistral-embed" in text
     assert "memory" in text
 
 

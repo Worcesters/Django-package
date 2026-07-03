@@ -80,6 +80,20 @@ RAG_EMBEDDERS = {
         "base_url": "http://localhost:11434",
         "dimensions": 768,
     },
+    "openai": {
+        "backend": "rag.embedders.openai.OpenAIEmbedder",
+        "model": "text-embedding-3-small",
+        "api_key_env": "OPENAI_API_KEY",
+        "base_url": "https://api.openai.com/v1",
+        "dimensions": 1536,
+    },
+    "mistral": {
+        "backend": "rag.embedders.mistral.MistralEmbedder",
+        "model": "mistral-embed",
+        "api_key_env": "MISTRAL_API_KEY",
+        "base_url": "https://api.mistral.ai/v1",
+        "dimensions": 1024,
+    },
 }
 
 RAG_DEFAULT_STORE = "memory"
@@ -87,10 +101,16 @@ RAG_VECTOR_STORES = {
     "memory": {
         "backend": "rag.stores.memory.InMemoryStore",
         "collection": "default",
-        "dimensions": 768,
+        "dimensions": 768,  # doit matcher RAG_DEFAULT_EMBEDDER
     },
 }
+```
 
+> **Embedding ≠ LLM chat** — pour `--embed`, `--index` et `--retrieve`, tu n'as **pas besoin** d'un modèle de completion (`gpt-4`, `mistral-large`, etc.) ni du package `inference`. Il te faut un **modèle d'embedding** dédié (`nomic-embed-text`, `text-embedding-3-small`, `mistral-embed`…). Le package `inference` n'intervient que pour **générer la réponse** une fois les chunks récupérés (RAG complet côté projet hôte).
+
+> **Clés API** — `OPENAI_API_KEY` et `MISTRAL_API_KEY` sont les **mêmes** que pour le chat, mais le **modèle** dans `RAG_EMBEDDERS` doit être un modèle d'embedding, pas un modèle LLM.
+
+```python
 RAG_CHUNKING = {
     "strategy": "fixed_size",
     "chunk_size": 800,
