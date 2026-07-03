@@ -7,10 +7,10 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from app.exceptions import InferenceError, ParseError, ProviderAPIError, ProviderConnectionError
-from app.parsers import parse_ollama_response
-from app.providers.ollama import OllamaProvider
-from app.services import complete
+from completion.exceptions import InferenceError, ParseError, ProviderAPIError, ProviderConnectionError
+from completion.parsers import parse_ollama_response
+from completion.providers.ollama import OllamaProvider
+from completion.services import complete
 
 
 OLLAMA_RESPONSE = {
@@ -43,7 +43,7 @@ def test_ollama_provider_requires_base_url() -> None:
         provider.complete([{"role": "user", "content": "Bonjour"}])
 
 
-@patch("app.providers.ollama.httpx.post")
+@patch("completion.providers.ollama.httpx.post")
 def test_ollama_provider_complete(mock_post: object) -> None:
     mock_response = httpx.Response(
         200,
@@ -72,7 +72,7 @@ def test_ollama_provider_complete(mock_post: object) -> None:
     assert call_kwargs["json"]["options"]["num_predict"] == 256
 
 
-@patch("app.providers.ollama.httpx.post")
+@patch("completion.providers.ollama.httpx.post")
 def test_ollama_provider_connection_error(mock_post: object) -> None:
     mock_post.side_effect = httpx.ConnectError("refused")
 
@@ -81,7 +81,7 @@ def test_ollama_provider_connection_error(mock_post: object) -> None:
         provider.complete([{"role": "user", "content": "Hi"}])
 
 
-@patch("app.providers.ollama.httpx.post")
+@patch("completion.providers.ollama.httpx.post")
 def test_ollama_provider_api_error(mock_post: object) -> None:
     mock_response = httpx.Response(
         500,
@@ -96,12 +96,12 @@ def test_ollama_provider_api_error(mock_post: object) -> None:
 
 
 @pytest.mark.django_db
-@patch("app.providers.ollama.httpx.post")
+@patch("completion.providers.ollama.httpx.post")
 def test_complete_service_with_llama(mock_post: object, settings: object) -> None:
     settings.INFERENCE_DEFAULT_PROVIDER = "llama"
     settings.INFERENCE_PROVIDERS = {
         "llama": {
-            "backend": "app.providers.ollama.OllamaProvider",
+            "backend": "completion.providers.ollama.OllamaProvider",
             "model": "llama3.2",
             "base_url": "http://localhost:11434",
         },

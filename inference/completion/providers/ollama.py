@@ -6,15 +6,15 @@ from typing import Any
 
 import httpx
 
-from app.exceptions import (
+from completion.exceptions import (
     InferenceError,
     ProviderAPIError,
     ProviderConnectionError,
     RateLimitError,
 )
-from app.parsers import parse_ollama_response
-from app.providers.base import BaseLLMProvider
-from app.schemas import CompletionResult
+from completion.parsers import parse_ollama_response
+from completion.providers.base import BaseLLMProvider
+from completion.schemas import CompletionResult
 
 CHAT_ENDPOINT = "/api/chat"
 

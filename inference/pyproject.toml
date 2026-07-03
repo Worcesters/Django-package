@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-inference = "app.cli:main"
+inference = "completion.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -26,10 +26,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["completion"]
 
 [tool.hatch.build.targets.sdist]
-include = ["app/docs/package_archi.puml"]
+include = ["completion/docs/package_archi.puml"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"

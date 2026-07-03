@@ -79,7 +79,7 @@ def colorize_help(text: str) -> str:
         styled = line
         styled = re.sub(r"\b(INFERENCE_\w+)\b", rf"{BOLD}{MAGENTA}\1{RESET}", styled)
         styled = re.sub(r"\b(OPENAI_API_KEY|MISTRAL_API_KEY)\b", rf"{YELLOW}\1{RESET}", styled)
-        styled = re.sub(r"\b(app\.[\w.]+)\b", rf"{BLUE}\1{RESET}", styled)
+        styled = re.sub(r"\b(completion\.[\w.]+)\b", rf"{BLUE}\1{RESET}", styled)
         styled = re.sub(r"(\s|^)(-{1,2}[\w-]+)", rf"\1{GREEN}\2{RESET}", styled)
         colored_lines.append(styled)
 

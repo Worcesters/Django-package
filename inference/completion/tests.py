@@ -4,13 +4,13 @@ from unittest.mock import patch
 
 import sys
 
-from app.cli import build_parser, main
-from app.complete_cmd import run_complete
-from app.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
-from app.factory import llm_factory
-from app.preview import build_kroki_preview_url, load_puml
-from app.schemas import CompletionResult, TokenUsage
-from app.terminal import colorize_help
+from completion.cli import build_parser, main
+from completion.complete_cmd import run_complete
+from completion.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
+from completion.factory import llm_factory
+from completion.preview import build_kroki_preview_url, load_puml
+from completion.schemas import CompletionResult, TokenUsage
+from completion.terminal import colorize_help
 
 
 def test_load_puml_returns_startuml_block() -> None:
@@ -55,8 +55,8 @@ def test_help_includes_complete_flag() -> None:
     assert "--settings" in help_text
 
 
-@patch("app.complete_cmd._ensure_project_on_path")
-@patch("app.services.complete")
+@patch("completion.complete_cmd._ensure_project_on_path")
+@patch("completion.services.complete")
 def test_run_complete_prints_text(
     mock_complete: object,
     mock_path: object,
@@ -75,7 +75,7 @@ def test_run_complete_prints_text(
 def test_ensure_project_on_path_inserts_cwd(monkeypatch: object, tmp_path: object) -> None:
     from pathlib import Path
 
-    from app.complete_cmd import _ensure_project_on_path
+    from completion.complete_cmd import _ensure_project_on_path
 
     workdir = Path(tmp_path)  # type: ignore[arg-type]
     monkeypatch.chdir(workdir)  # type: ignore[attr-defined]

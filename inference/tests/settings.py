@@ -5,7 +5,7 @@ INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "rest_framework",
-    "app.apps.InferenceConfig",
+    "completion.apps.InferenceConfig",
 ]
 DATABASES = {
     "default": {
@@ -19,7 +19,7 @@ USE_TZ = True
 INFERENCE_DEFAULT_PROVIDER = "openai"
 INFERENCE_PROVIDERS = {
     "openai": {
-        "backend": "app.providers.openai.OpenAIProvider",
+        "backend": "completion.providers.openai.OpenAIProvider",
         "model": "gpt-4o",
         "api_key_env": "OPENAI_API_KEY",
     },

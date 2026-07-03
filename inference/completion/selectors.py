@@ -7,14 +7,14 @@ from typing import Any
 
 from django.conf import settings
 
-from app.conf import (
+from completion.conf import (
     DEFAULT_PROVIDER_REGISTRY,
     SETTING_DEFAULT_PROVIDER,
     SETTING_PROVIDERS,
 )
-from app.exceptions import ProviderNotFoundError
-from app.factory import llm_factory
-from app.schemas import LLMConfig
+from completion.exceptions import ProviderNotFoundError
+from completion.factory import llm_factory
+from completion.schemas import LLMConfig
 
 
 def _get_providers_setting() -> dict[str, Any]:

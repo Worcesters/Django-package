@@ -9,9 +9,9 @@ SETTING_RETRY = "INFERENCE_RETRY"
 
 # Registry par défaut (chemins de classes provider)
 DEFAULT_PROVIDER_REGISTRY: dict[str, str] = {
-    "openai": "app.providers.openai.OpenAIProvider",
-    "mistral": "app.providers.mistral.MistralProvider",
-    "llama": "app.providers.ollama.OllamaProvider",
+    "openai": "completion.providers.openai.OpenAIProvider",
+    "mistral": "completion.providers.mistral.MistralProvider",
+    "llama": "completion.providers.ollama.OllamaProvider",
 }
 
 
@@ -91,5 +91,5 @@ Variables d'environnement (.env) :
 
 Installe aussi l'app dans INSTALLED_APPS :
 
-  "app.apps.InferenceConfig",
+  "completion.apps.InferenceConfig",
 """.strip()

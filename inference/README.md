@@ -70,7 +70,7 @@ La réponse s'affiche sur **stdout** ; métadonnées (modèle, tokens) sur **std
 
 ### Preview architecture
 
-Le package embarque un diagramme PlantUML (`app/docs/package_archi.puml`).
+Le package embarque un diagramme PlantUML (`completion/docs/package_archi.puml`).
 
 Avec `--preview` :
 
@@ -118,7 +118,7 @@ uv run inference --preview
 ## Utilisation Python (inférence)
 
 ```python
-from app.services import complete
+from completion.services import complete
 
 result = complete(messages=[{"role": "user", "content": "Bonjour"}])
 print(result.text)
@@ -131,13 +131,13 @@ Dans `config/settings/base.py` :
 ```python
 INSTALLED_APPS = [
     # ...
-    "app.apps.InferenceConfig",
+    "completion.apps.InferenceConfig",
 ]
 
 INFERENCE_DEFAULT_PROVIDER = "llama"
 INFERENCE_PROVIDERS = {
     "llama": {
-        "backend": "app.providers.ollama.OllamaProvider",
+        "backend": "completion.providers.ollama.OllamaProvider",
         "base_url": "http://ton-ollama:11434",
         "model": "llama3.2",
     },
@@ -148,11 +148,11 @@ Snippet complet : `uv run inference --help`
 
 ## Structure
 
-- `app/cli.py` — commande `uv run inference`
-- `app/preview.py` — logique preview PlantUML
-- `app/services.py` — `complete()` (inférence texte)
-- `app/conf.py` — constantes `INFERENCE_*`
-- `app/factory.py` — `LLMFactory`
-- `app/providers/` — `OpenAIProvider`, `MistralProvider`, `OllamaProvider`
-- `app/docs/package_archi.puml` — diagramme d'architecture
+- `completion/cli.py` — commande `uv run inference`
+- `completion/preview.py` — logique preview PlantUML
+- `completion/services.py` — `complete()` (inférence texte)
+- `completion/conf.py` — constantes `INFERENCE_*`
+- `completion/factory.py` — `LLMFactory`
+- `completion/providers/` — `OpenAIProvider`, `MistralProvider`, `OllamaProvider`
+- `completion/docs/package_archi.puml` — diagramme d'architecture
 - `pyproject.toml` — metadata pip/uv (hatchling)

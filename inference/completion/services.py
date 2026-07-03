@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from app.factory import llm_factory
-from app.schemas import CompletionResult
-from app.selectors import get_provider_config
+from completion.factory import llm_factory
+from completion.schemas import CompletionResult
+from completion.selectors import get_provider_config
 
 
 def complete(

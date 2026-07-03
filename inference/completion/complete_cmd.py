@@ -6,8 +6,8 @@ import os
 import sys
 from pathlib import Path
 
-from app.exceptions import InferenceError
-from app.schemas import CompletionResult
+from completion.exceptions import InferenceError
+from completion.schemas import CompletionResult
 
 
 def _ensure_project_on_path() -> None:
@@ -63,7 +63,7 @@ def run_complete(
     """Exécute une completion et affiche le résultat sur stdout."""
     setup_django(settings_module)
 
-    from app.services import complete
+    from completion.services import complete
 
     try:
         result = complete(
