@@ -2,10 +2,15 @@
 !theme plain
 skinparam shadowing false
 skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
 
-title Modèle de classes — django-inference (implémentation actuelle)
+title django-inference — architecture (détail des classes)
 
-package "schemas.py" {
+top to bottom direction
+
+' ===== schemas =====
+package "schemas.py" as pkg_schemas {
   class LLMConfig <<dataclass>> {
     +provider: str
     +model: str
@@ -17,6 +22,12 @@ package "schemas.py" {
     +extra: dict
   }
 
+  class TokenUsage <<dataclass>> {
+    +prompt_tokens: int
+    +completion_tokens: int
+    +total_tokens: int
+  }
+
   class CompletionResult <<dataclass>> {
     +text: str
     +model: str
@@ -25,43 +36,77 @@ package "schemas.py" {
     +finish_reason: str
   }
 
-  class TokenUsage <<dataclass>> {
-    +prompt_tokens: int
-    +completion_tokens: int
-    +total_tokens: int
-  }
-
   CompletionResult *-- TokenUsage
 }
 
-package "providers/" {
+' ===== conf =====
+package "conf.py" as pkg_conf {
+  class InferenceSettings <<constants>> {
+    INFERENCE_DEFAULT_PROVIDER
+    INFERENCE_PROVIDERS
+    INFERENCE_RETRY
+  }
+}
+
+' ===== selectors =====
+package "selectors.py" as pkg_selectors {
+  class InferenceSelectors {
+    +get_provider_config(provider_name): LLMConfig
+    +list_available_providers(): list[str]
+    -_get_providers_setting(): dict
+  }
+}
+
+' ===== services =====
+package "services.py" as pkg_services {
+  class InferenceServices {
+    +complete(messages, provider): CompletionResult
+  }
+}
+
+' ===== factory =====
+package "factory.py" as pkg_factory {
+  class LLMFactory {
+    -_registry: dict[str, str]
+    -_instances: dict[str, BaseLLMProvider]
+    +register(name, class_path): None
+    +list_providers(): list[str]
+    +get_provider(name, config): BaseLLMProvider
+    -_get_provider_class(name): type
+  }
+
+  class llm_factory <<singleton>>
+}
+
+' ===== providers =====
+package "providers" as pkg_providers {
   abstract class BaseLLMProvider {
     +provider_id: str
     +config: dict
-    +complete(messages): CompletionResult
+    +__init__(config): None
+    +{abstract} complete(messages): CompletionResult
   }
 
   class ChatCompletionsProvider {
-    CHAT_ENDPOINT = "/chat/completions"
+    CHAT_ENDPOINT = chat/completions
     +complete(messages): CompletionResult
     -_resolve_base_url(): str
     -_resolve_api_key(): str
   }
 
-  class OpenAIProvider {
-    provider_id = "openai"
-  }
-
-  class MistralProvider {
-    provider_id = "mistral"
-  }
-
   class OllamaProvider {
-    CHAT_ENDPOINT = "/api/chat"
-    provider_id = "llama"
+    CHAT_ENDPOINT = api/chat
     +complete(messages): CompletionResult
     -_resolve_base_url(): str
     -_build_options(): dict
+  }
+
+  class OpenAIProvider {
+    +provider_id = openai
+  }
+
+  class MistralProvider {
+    +provider_id = mistral
   }
 
   BaseLLMProvider <|-- ChatCompletionsProvider
@@ -70,34 +115,16 @@ package "providers/" {
   ChatCompletionsProvider <|-- MistralProvider
 }
 
-package "factory.py" {
-  class LLMFactory {
-    -_registry: dict[str, str]
-    -_instances: dict[str, BaseLLMProvider]
-    +register(name, class_path)
-    +get_provider(name, config): BaseLLMProvider
-    +list_providers(): list[str]
+' ===== parsers =====
+package "parsers.py" as pkg_parsers {
+  class ResponseParsers {
+    +parse_ollama_response(raw, model): CompletionResult
+    +parse_chat_completions_response(raw, model, provider): CompletionResult
   }
-
-  object "llm_factory" as llm_factory_singleton
-  LLMFactory .. llm_factory_singleton
 }
 
-package "parsers.py" <<module>> {
-  class "parse_ollama_response()" as parse_ollama
-  class "parse_chat_completions_response()" as parse_chat
-}
-
-package "selectors.py" <<module>> {
-  class "get_provider_config()" as get_config
-  class "list_available_providers()" as list_providers
-}
-
-package "services.py" <<module>> {
-  class "complete(messages, provider?)" as complete_svc
-}
-
-package "exceptions.py" {
+' ===== exceptions =====
+package "exceptions.py" as pkg_errors {
   abstract class InferenceError {
     +code: str
     +message: str
@@ -117,27 +144,22 @@ package "exceptions.py" {
   InferenceError <|-- RateLimitError
 }
 
-package "conf.py" <<module>> {
-  class "INFERENCE_DEFAULT_PROVIDER" as setting_default
-  class "INFERENCE_PROVIDERS" as setting_providers
-  class "INFERENCE_RETRY" as setting_retry
-}
+' ----- Flux principal -----
+InferenceSettings -down-> InferenceSelectors : lit settings
+InferenceSelectors -down-> LLMConfig : construit
+InferenceSelectors -down-> InferenceServices
+InferenceServices -down-> llm_factory : get_provider()
+llm_factory -down-> BaseLLMProvider : instancie
+BaseLLMProvider -down-> ResponseParsers : JSON brut
+ResponseParsers -down-> CompletionResult : normalise
 
-' --- Flux principal ---
-complete_svc --> get_config : lit settings
-get_config --> setting_providers
-get_config ..> LLMConfig : construit
-complete_svc --> llm_factory_singleton : get_provider()
-llm_factory_singleton --> BaseLLMProvider : instancie
-
-OllamaProvider ..> parse_ollama : parse réponse
-ChatCompletionsProvider ..> parse_chat : parse réponse
-parse_ollama ..> CompletionResult
-parse_chat ..> CompletionResult
-
-BaseLLMProvider ..> LLMConfig : via config dict
+' ----- Liens transverses -----
+LLMFactory ..> BaseLLMProvider
+ChatCompletionsProvider ..> ResponseParsers
+OllamaProvider ..> ResponseParsers
 BaseLLMProvider ..> InferenceError : lève
 
+' ===== Notes (conservées) =====
 note right of ChatCompletionsProvider
   OpenAI + Mistral partagent
   l'API /chat/completions
@@ -149,7 +171,7 @@ note right of OllamaProvider
   (base_url obligatoire, pas de clé API)
 end note
 
-note bottom of setting_providers
+note bottom of InferenceSettings
   Défini dans le projet hôte :
   INFERENCE_PROVIDERS = {
     "openai": { base_url, model, api_key_env },
@@ -163,5 +185,7 @@ note as N1
   stream(), embed(), AnthropicProvider
   INFERENCE_RETRY (retry HTTP)
 end note
+
+N1 -[hidden]left- pkg_errors
 
 @enduml
