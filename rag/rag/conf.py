@@ -1,4 +1,4 @@
-"""Constantes de configuration Django pour django-rag."""
+"""Constantes de configuration Django pour rag."""
 
 from __future__ import annotations
 

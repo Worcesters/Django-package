@@ -1,5 +1,5 @@
 [project]
-name = "django-rag"
+name = "rag"
 version = "0.1.0"
 description = "Package Django RAG (embedding, retrieval, Service Layer)"
 readme = "README.md"

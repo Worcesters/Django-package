@@ -1,4 +1,4 @@
-# django-rag
+# rag
 
 Package Django installable via **uv** — embedding, indexation et retrieval (RAG).
 
@@ -8,7 +8,7 @@ Compose avec le package **[inference](../inference/)** pour la génération fina
 
 ```powershell
 cd chemin/vers/votre/projet-django
-uv add "django-rag @ git+https://github.com/VOTRE_ORG/package_llm_rag.git"
+uv add "rag @ git+https://github.com/VOTRE_ORG/package_llm_rag.git"
 ```
 
 Développement local :

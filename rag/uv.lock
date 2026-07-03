@@ -128,7 +128,7 @@ wheels = [
 ]
 
 [[package]]
-name = "django-rag"
+name = "rag"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

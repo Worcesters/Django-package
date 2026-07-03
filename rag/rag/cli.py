@@ -23,7 +23,7 @@ class RagArgumentParser(argparse.ArgumentParser):
 def build_parser() -> RagArgumentParser:
     parser = RagArgumentParser(
         prog="rag",
-        description="CLI django-rag : configuration, preview d'architecture et test RAG.",
+        description="CLI rag : configuration, preview d'architecture et test RAG.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=format_settings_help(),
     )
