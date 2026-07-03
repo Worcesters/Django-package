@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
+from typing import TextIO
 
 from completion.complete_cmd import run_complete
 from completion.conf import format_settings_help
@@ -11,8 +13,15 @@ from completion.preview import KROKI_BASE_URL, run_preview
 from completion.terminal import print_help
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+class InferenceArgumentParser(argparse.ArgumentParser):
+    """ArgumentParser avec aide colorée (-h / --help inclus)."""
+
+    def print_help(self, file: TextIO | None = None) -> None:
+        print_help(self.format_help(), file=file or sys.stdout)
+
+
+def build_parser() -> InferenceArgumentParser:
+    parser = InferenceArgumentParser(
         prog="inference",
         description="CLI inference : configuration, preview d'architecture et test de completion.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

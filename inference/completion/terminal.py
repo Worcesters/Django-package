@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import re
 import sys
+from typing import IO, TextIO
 
 RESET = "\033[0m"
 BOLD = "\033[1m"
@@ -44,11 +45,17 @@ def supports_color() -> bool:
     """True si stdout supporte les séquences ANSI (PowerShell, Windows Terminal, etc.)."""
     if os.environ.get("NO_COLOR"):
         return False
+    if os.environ.get("FORCE_COLOR"):
+        _enable_windows_vt()
+        return True
     is_tty = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
-    if not is_tty and not os.environ.get("FORCE_COLOR"):
-        return False
-    _enable_windows_vt()
-    return True
+    if is_tty:
+        _enable_windows_vt()
+        return True
+    if os.name == "nt" and os.environ.get("WT_SESSION"):
+        _enable_windows_vt()
+        return True
+    return False
 
 
 def colorize_help(text: str) -> str:
@@ -86,6 +93,10 @@ def colorize_help(text: str) -> str:
     return "\n".join(colored_lines)
 
 
-def print_help(text: str) -> None:
+def print_help(text: str, file: TextIO | None = None) -> None:
     """Affiche l'aide CLI avec couleurs si le terminal le permet."""
-    print(colorize_help(text))
+    output: IO[str] = file if file is not None else sys.stdout
+    help_text = colorize_help(text) if output is sys.stdout else text
+    output.write(help_text)
+    if not help_text.endswith("\n"):
+        output.write("\n")
