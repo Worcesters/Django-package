@@ -2,12 +2,15 @@
 
 from unittest.mock import patch
 
+import sys
+
 from app.cli import build_parser, main
 from app.complete_cmd import run_complete
 from app.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
 from app.factory import llm_factory
 from app.preview import build_kroki_preview_url, load_puml
 from app.schemas import CompletionResult, TokenUsage
+from app.terminal import colorize_help
 
 
 def test_load_puml_returns_startuml_block() -> None:
@@ -52,11 +55,11 @@ def test_help_includes_complete_flag() -> None:
     assert "--settings" in help_text
 
 
+@patch("app.complete_cmd._ensure_project_on_path")
 @patch("app.services.complete")
-@patch("app.complete_cmd.setup_django")
 def test_run_complete_prints_text(
-    mock_setup: object,
     mock_complete: object,
+    mock_path: object,
 ) -> None:
     mock_complete.return_value = CompletionResult(  # type: ignore[attr-defined]
         text="Salut !",
@@ -66,6 +69,23 @@ def test_run_complete_prints_text(
     )
     result = run_complete("Bonjour", provider="llama", settings_module="tests.settings")
     assert result.text == "Salut !"
+    mock_path.assert_called_once()  # type: ignore[attr-defined]
+
+
+def test_ensure_project_on_path_inserts_cwd(monkeypatch: object, tmp_path: object) -> None:
+    from pathlib import Path
+
+    from app.complete_cmd import _ensure_project_on_path
+
+    workdir = Path(tmp_path)  # type: ignore[arg-type]
+    monkeypatch.chdir(workdir)  # type: ignore[attr-defined]
+    original_path = sys.path.copy()
+    sys.path.clear()
+    sys.path.extend(original_path)
+
+    _ensure_project_on_path()
+
+    assert str(workdir.resolve()) in sys.path
 
 
 def test_main_rejects_complete_and_preview_together(capsys: object) -> None:
@@ -75,6 +95,20 @@ def test_main_rejects_complete_and_preview_together(capsys: object) -> None:
         assert exc.code == 2
     else:
         raise AssertionError("expected SystemExit")
+
+
+def test_colorize_help_disabled_with_no_color(monkeypatch: object) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")  # type: ignore[attr-defined]
+    raw = build_parser().format_help()
+    assert colorize_help(raw) == raw
+
+
+def test_colorize_help_adds_ansi_when_forced(monkeypatch: object) -> None:
+    monkeypatch.setenv("FORCE_COLOR", "1")  # type: ignore[attr-defined]
+    monkeypatch.delenv("NO_COLOR", raising=False)  # type: ignore[attr-defined]
+    colored = colorize_help("usage: inference [-h]\n\noptions:\n  --complete")
+    assert "\033[" in colored
+    assert "usage:" in colored
 
 
 def test_format_settings_help_lists_default_providers() -> None:

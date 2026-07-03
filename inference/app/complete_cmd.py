@@ -4,9 +4,26 @@ from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
 from app.exceptions import InferenceError
 from app.schemas import CompletionResult
+
+
+def _ensure_project_on_path() -> None:
+    """Ajoute la racine du projet Django hôte à sys.path (comme manage.py)."""
+    cwd = Path.cwd().resolve()
+    roots: list[Path] = [cwd]
+
+    for parent in [cwd, *cwd.parents]:
+        if (parent / "manage.py").is_file():
+            roots.insert(0, parent)
+            break
+
+    for root in roots:
+        root_str = str(root)
+        if root_str not in sys.path:
+            sys.path.insert(0, root_str)
 
 
 def setup_django(settings_module: str | None) -> None:
@@ -22,8 +39,19 @@ def setup_django(settings_module: str | None) -> None:
         )
         raise SystemExit(msg)
 
+    _ensure_project_on_path()
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", module)
-    django.setup()
+
+    try:
+        django.setup()
+    except ModuleNotFoundError as exc:
+        top_level = module.split(".", 1)[0]
+        msg = (
+            f"Impossible d'importer le module settings '{module}' ({exc}).\n"
+            f"  Lance la commande depuis la racine de ton projet Django (où se trouve manage.py).\n"
+            f"  Vérifie que le package '{top_level}' existe bien (ex. config/settings/dev.py)."
+        )
+        raise SystemExit(msg) from exc
 
 
 def run_complete(

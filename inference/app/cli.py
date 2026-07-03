@@ -8,6 +8,7 @@ from pathlib import Path
 from app.complete_cmd import run_complete
 from app.conf import format_settings_help
 from app.preview import KROKI_BASE_URL, run_preview
+from app.terminal import print_help
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -80,7 +81,7 @@ def main(argv: list[str] | None = None) -> None:
         )
         return
 
-    build_parser().print_help()
+    print_help(build_parser().format_help())
 
 
 if __name__ == "__main__":
