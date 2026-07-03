@@ -10,6 +10,7 @@ from typing import TextIO
 from completion.complete_cmd import run_complete
 from completion.conf import format_settings_help
 from completion.preview import KROKI_BASE_URL, run_preview
+from completion.readme import run_readme
 from completion.terminal import print_help
 
 
@@ -42,6 +43,11 @@ def build_parser() -> InferenceArgumentParser:
         "--settings",
         metavar="MODULE",
         help="Avec --complete : module Django settings (ex. config.settings.dev).",
+    )
+    parser.add_argument(
+        "--readme",
+        action="store_true",
+        help="Affiche le README du package (coloré) dans le terminal.",
     )
     parser.add_argument(
         "--preview",
@@ -80,8 +86,8 @@ def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
 
     if args.complete is not None:
-        if args.preview:
-            build_parser().error("--complete et --preview sont mutuellement exclusifs.")
+        if args.preview or args.readme:
+            build_parser().error("--complete est incompatible avec --preview et --readme.")
         run_complete(
             args.complete,
             provider=args.provider,
@@ -90,12 +96,18 @@ def main(argv: list[str] | None = None) -> None:
         return
 
     if args.preview:
+        if args.readme:
+            build_parser().error("--preview et --readme sont mutuellement exclusifs.")
         run_preview(
             output=args.output,
             html_output=args.html_output,
             no_open=args.no_open,
             kroki_base_url=args.kroki_base_url,
         )
+        return
+
+    if args.readme:
+        run_readme()
         return
 
     print_help(build_parser().format_help())

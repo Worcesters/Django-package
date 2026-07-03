@@ -10,6 +10,7 @@ from typing import TextIO
 from rag.conf import format_settings_help
 from rag.preview import KROKI_BASE_URL, run_preview
 from rag.rag_cmd import run_embed, run_index, run_retrieve
+from rag.readme import run_readme
 from rag.terminal import print_help
 
 
@@ -77,6 +78,11 @@ def build_parser() -> RagArgumentParser:
         help="Vector store explicite (sinon RAG_DEFAULT_STORE).",
     )
     parser.add_argument(
+        "--readme",
+        action="store_true",
+        help="Affiche le README du package (coloré) dans le terminal.",
+    )
+    parser.add_argument(
         "--preview",
         action="store_true",
         help="Affiche le diagramme PlantUML (viewer HTML zoom/pan via Kroki).",
@@ -112,11 +118,13 @@ def build_parser() -> RagArgumentParser:
 def _validate_exclusive(args: argparse.Namespace) -> None:
     actions = sum(
         1
-        for flag in (args.index, args.retrieve, args.embed, args.preview)
+        for flag in (args.index, args.retrieve, args.embed, args.preview, args.readme)
         if flag not in (None, False)
     )
     if actions > 1:
-        build_parser().error("--index, --retrieve, --embed et --preview sont mutuellement exclusifs.")
+        build_parser().error(
+            "--index, --retrieve, --embed, --preview et --readme sont mutuellement exclusifs."
+        )
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -160,6 +168,10 @@ def main(argv: list[str] | None = None) -> None:
             no_open=args.no_open,
             kroki_base_url=args.kroki_base_url,
         )
+        return
+
+    if args.readme:
+        run_readme()
         return
 
     print_help(build_parser().format_help())

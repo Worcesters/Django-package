@@ -24,6 +24,9 @@ uv add "inference @ git+https://github.com/VOTRE_ORG/package_llm_inference.git@v
 # Aide + snippet des constantes Django INFERENCE_*
 uv run inference --help
 
+# README coloré dans le terminal
+uv run inference --readme
+
 # Preview architecture (PlantUML → SVG en ligne, navigateur)
 uv run inference --preview
 

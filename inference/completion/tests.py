@@ -11,7 +11,8 @@ from completion.factory import llm_factory
 from completion.preview_viewer import build_interactive_html
 from completion.preview import build_kroki_preview_url, load_puml
 from completion.schemas import CompletionResult, TokenUsage
-from completion.terminal import colorize_help
+from completion.terminal import colorize_help, colorize_readme
+from completion.readme import load_readme
 
 
 def test_load_puml_returns_startuml_block() -> None:
@@ -99,6 +100,44 @@ def test_ensure_project_on_path_inserts_cwd(monkeypatch: object, tmp_path: objec
 def test_main_rejects_complete_and_preview_together(capsys: object) -> None:
     try:
         main(["--complete", "x", "--preview", "--settings", "tests.settings"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected SystemExit")
+
+
+def test_help_includes_readme_flag() -> None:
+    help_text = build_parser().format_help()
+    assert "--readme" in help_text
+
+
+def test_cli_readme_flag_parsing() -> None:
+    args = build_parser().parse_args(["--readme"])
+    assert args.readme is True
+
+
+def test_load_readme_returns_markdown() -> None:
+    content = load_readme()
+    assert content.startswith("# inference")
+
+
+def test_colorize_readme_adds_ansi_when_forced(monkeypatch: object) -> None:
+    monkeypatch.setenv("FORCE_COLOR", "1")  # type: ignore[attr-defined]
+    monkeypatch.delenv("NO_COLOR", raising=False)  # type: ignore[attr-defined]
+    colored = colorize_readme(load_readme())
+    assert "\033[" in colored
+    assert "# inference" in colored or "inference" in colored
+
+
+@patch("completion.readme.print_readme")
+def test_main_readme_flag(mock_print: object) -> None:
+    main(["--readme"])
+    mock_print.assert_called_once()  # type: ignore[attr-defined]
+
+
+def test_main_rejects_complete_and_readme_together() -> None:
+    try:
+        main(["--complete", "x", "--readme"])
     except SystemExit as exc:
         assert exc.code == 2
     else:

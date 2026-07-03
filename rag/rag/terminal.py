@@ -63,32 +63,108 @@ def colorize_help(text: str) -> str:
 
     colored_lines: list[str] = []
     for line in text.splitlines():
+        colored_lines.append(_colorize_help_line(line))
+
+    return "\n".join(colored_lines)
+
+
+def _colorize_help_line(line: str) -> str:
+    stripped = line.strip()
+
+    if line.startswith("usage:"):
+        return f"{BOLD}{CYAN}{line}{RESET}"
+
+    if stripped == "options:":
+        return f"{BOLD}{YELLOW}{line}{RESET}"
+
+    if any(marker in line for marker in _SECTION_MARKERS):
+        return f"{BOLD}{CYAN}{line}{RESET}"
+
+    if re.fullmatch(r"-{3,}", stripped):
+        return f"{DIM}{line}{RESET}"
+
+    styled = line
+    styled = re.sub(r"\b(RAG_\w+)\b", rf"{BOLD}{MAGENTA}\1{RESET}", styled)
+    styled = re.sub(r"\b(OPENAI_API_KEY|MISTRAL_API_KEY)\b", rf"{YELLOW}\1{RESET}", styled)
+    styled = re.sub(r"\b(rag\.[\w.]+)\b", rf"{BLUE}\1{RESET}", styled)
+    styled = re.sub(r"(\s|^)(-{1,2}[\w-]+)", rf"\1{GREEN}\2{RESET}", styled)
+    return styled
+
+
+def colorize_readme(text: str) -> str:
+    """Applique une coloration Markdown lisible pour PowerShell / ANSI."""
+    if not supports_color():
+        return text
+
+    colored_lines: list[str] = []
+    in_code_block = False
+
+    for line in text.splitlines():
         stripped = line.strip()
 
-        if line.startswith("usage:"):
-            colored_lines.append(f"{BOLD}{CYAN}{line}{RESET}")
-            continue
-
-        if stripped == "options:":
-            colored_lines.append(f"{BOLD}{YELLOW}{line}{RESET}")
-            continue
-
-        if any(marker in line for marker in _SECTION_MARKERS):
-            colored_lines.append(f"{BOLD}{CYAN}{line}{RESET}")
-            continue
-
-        if re.fullmatch(r"-{3,}", stripped):
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
             colored_lines.append(f"{DIM}{line}{RESET}")
             continue
 
-        styled = line
-        styled = re.sub(r"\b(RAG_\w+)\b", rf"{BOLD}{MAGENTA}\1{RESET}", styled)
-        styled = re.sub(r"\b(OPENAI_API_KEY|MISTRAL_API_KEY)\b", rf"{YELLOW}\1{RESET}", styled)
-        styled = re.sub(r"\b(rag\.[\w.]+)\b", rf"{BLUE}\1{RESET}", styled)
-        styled = re.sub(r"(\s|^)(-{1,2}[\w-]+)", rf"\1{GREEN}\2{RESET}", styled)
-        colored_lines.append(styled)
+        if in_code_block:
+            colored_lines.append(f"{DIM}{line}{RESET}")
+            continue
+
+        if stripped.startswith("# "):
+            colored_lines.append(f"{BOLD}{CYAN}{line}{RESET}")
+            continue
+        if stripped.startswith("## "):
+            colored_lines.append(f"{BOLD}{GREEN}{line}{RESET}")
+            continue
+        if stripped.startswith("### "):
+            colored_lines.append(f"{BOLD}{YELLOW}{line}{RESET}")
+            continue
+        if stripped.startswith("#### "):
+            colored_lines.append(f"{BOLD}{line}{RESET}")
+            continue
+
+        if re.fullmatch(r"(-{3,}|\*{3,}|_{3,})", stripped):
+            colored_lines.append(f"{DIM}{line}{RESET}")
+            continue
+
+        if stripped.startswith(">"):
+            colored_lines.append(f"{DIM}{CYAN}{_style_readme_inline(line)}{RESET}")
+            continue
+
+        if re.match(r"^(\s*[-*]|\s*\d+\.)\s", line):
+            prefix_match = re.match(r"^(\s*(?:[-*]|\d+\.)\s)(.*)$", line)
+            if prefix_match:
+                prefix, body = prefix_match.groups()
+                colored_lines.append(f"{prefix}{GREEN}{_style_readme_inline(body)}{RESET}")
+                continue
+
+        if "|" in line and stripped.startswith("|"):
+            if re.match(r"^\|\s*-+", stripped):
+                colored_lines.append(f"{DIM}{line}{RESET}")
+            else:
+                colored_lines.append(_style_readme_inline(line))
+            continue
+
+        colored_lines.append(_style_readme_inline(line))
 
     return "\n".join(colored_lines)
+
+
+def _style_readme_inline(line: str) -> str:
+    styled = line
+    styled = re.sub(r"\*\*(.+?)\*\*", rf"{BOLD}\1{RESET}", styled)
+    styled = re.sub(r"`([^`]+)`", rf"{MAGENTA}\1{RESET}", styled)
+    styled = re.sub(
+        r"\[([^\]]+)\]\(([^)]+)\)",
+        rf"{BLUE}\1{RESET}{DIM}(\2){RESET}",
+        styled,
+    )
+    styled = re.sub(r"\b(RAG_\w+)\b", rf"{BOLD}{MAGENTA}\1{RESET}", styled)
+    styled = re.sub(r"\b(OPENAI_API_KEY|MISTRAL_API_KEY)\b", rf"{YELLOW}\1{RESET}", styled)
+    styled = re.sub(r"\b(rag\.[\w.]+)\b", rf"{BLUE}\1{RESET}", styled)
+    styled = re.sub(r"(\s|^)(-{1,2}[\w-]+)", rf"\1{GREEN}\2{RESET}", styled)
+    return styled
 
 
 def print_help(text: str, file: TextIO | None = None) -> None:
@@ -96,4 +172,13 @@ def print_help(text: str, file: TextIO | None = None) -> None:
     help_text = colorize_help(text) if output is sys.stdout else text
     output.write(help_text)
     if not help_text.endswith("\n"):
+        output.write("\n")
+
+
+def print_readme(text: str, file: TextIO | None = None) -> None:
+    """Affiche le README avec coloration Markdown si le terminal le permet."""
+    output: IO[str] = file if file is not None else sys.stdout
+    readme_text = colorize_readme(text) if output is sys.stdout else text
+    output.write(readme_text)
+    if not readme_text.endswith("\n"):
         output.write("\n")

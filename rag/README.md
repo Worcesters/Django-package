@@ -23,6 +23,9 @@ uv add --editable ./chemin/vers/rag
 # Aide + snippet des constantes Django RAG_*
 uv run rag --help
 
+# README coloré dans le terminal
+uv run rag --readme
+
 # Preview architecture interactive (zoom/pan)
 uv run rag --preview
 
@@ -51,6 +54,7 @@ uv run rag -r "framework Python" --settings config.settings.dev --top-k 3
 | Commande | Description |
 |----------|-------------|
 | `uv run rag --help` | Aide CLI + snippet `RAG_*` |
+| `uv run rag --readme` | README coloré dans le terminal |
 | `uv run rag --preview` | Viewer HTML interactif (zoom molette, glisser pour pan) |
 | `uv run rag --preview --no-open` | Affiche les chemins preview sans ouvrir le navigateur |
 | `uv run rag --preview --html-output docs/archi.html` | Enregistre le viewer HTML localement |
