@@ -1,0 +1,13 @@
+{
+  "INFERENCE_DEFAULT_PROVIDER": "llama",
+  "INFERENCE_PROVIDERS": {
+    "llama": {
+      "backend": "completion.providers.ollama.OllamaProvider",
+      "model": "llama3.2",
+      "base_url": "http://localhost:11434",
+      "temperature": 0.5,
+      "max_tokens": 256,
+      "timeout": 30
+    }
+  }
+}

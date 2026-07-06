@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+from pathlib import Path
+
 from rag.cli import build_parser, main
 from rag.conf import (
     SETTING_DEFAULT_EMBEDDER,
@@ -39,6 +41,24 @@ def test_help_includes_rag_settings_constants() -> None:
     assert SETTING_VECTOR_STORES in help_text
     assert "--retrieve" in help_text
     assert "--index" in help_text
+    assert "--config" in help_text
+
+
+def test_cli_config_flag_parsing() -> None:
+    args = build_parser().parse_args(
+        ["--embed", "hello", "--config", "rag.json"]
+    )
+    assert args.embed == "hello"
+    assert args.config == Path("rag.json")
+
+
+def test_main_rejects_settings_and_config_together() -> None:
+    try:
+        main(["--embed", "x", "--settings", "tests.settings", "--config", "x.json"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected SystemExit")
 
 
 def test_cli_retrieve_flag_parsing() -> None:

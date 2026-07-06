@@ -45,6 +45,12 @@ def build_parser() -> InferenceArgumentParser:
         help="Avec --complete : module Django settings (ex. config.settings.dev).",
     )
     parser.add_argument(
+        "--config",
+        type=Path,
+        metavar="FICHIER",
+        help="Avec --complete : fichier JSON standalone (ex. ./inference.json).",
+    )
+    parser.add_argument(
         "--readme",
         action="store_true",
         help="Affiche le README du package (coloré) dans le terminal.",
@@ -88,10 +94,13 @@ def main(argv: list[str] | None = None) -> None:
     if args.complete is not None:
         if args.preview or args.readme:
             build_parser().error("--complete est incompatible avec --preview et --readme.")
+        if args.settings and args.config:
+            build_parser().error("--settings et --config sont mutuellement exclusifs.")
         run_complete(
             args.complete,
             provider=args.provider,
             settings_module=args.settings,
+            config_path=str(args.config) if args.config else None,
         )
         return
 

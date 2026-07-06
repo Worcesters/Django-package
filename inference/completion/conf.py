@@ -92,4 +92,28 @@ Variables d'environnement (.env) :
 Installe aussi l'app dans INSTALLED_APPS :
 
   "completion.apps.InferenceConfig",
+
+Configuration standalone (Lambda, scripts, --config)
+---------------------------------------------------
+
+Même structure que les settings Django, dans un fichier JSON :
+
+  uv run inference --complete "Hello" --config ./inference.json
+
+Exemple inference.json :
+
+{{
+  "{SETTING_DEFAULT_PROVIDER}": "openai",
+  "{SETTING_PROVIDERS}": {{
+    "openai": {{
+      "backend": "{DEFAULT_PROVIDER_REGISTRY["openai"]}",
+      "model": "gpt-4o",
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": "https://api.openai.com/v1"
+    }}
+  }}
+}}
+
+Les clés API restent dans l'environnement (api_key_env), pas dans le JSON.
+En code Lambda : configure_from_dict() ou configure_from_file() au cold start.
 """.strip()

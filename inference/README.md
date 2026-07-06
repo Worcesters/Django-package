@@ -38,6 +38,9 @@ uv run inference --complete "Bonjour, qui es-tu ?" --settings config.settings.de
 
 # Provider explicite (Ollama local)
 uv run inference -c "2+2 ?" --provider llama --settings config.settings.dev
+
+# Standalone — sans Django (Lambda, scripts, CI)
+uv run inference --complete "Hello" --config ./inference.json
 ```
 
 ### Test de completion (`--complete`)
@@ -68,8 +71,49 @@ uv run inference --complete "Hello"
 | `--complete`, `-c PROMPT` | Message utilisateur envoyé au LLM |
 | `--provider NOM` | Provider dans `INFERENCE_PROVIDERS` (sinon défaut) |
 | `--settings MODULE` | Module settings Django (`config.settings.dev`) |
+| `--config FICHIER` | Fichier JSON standalone (alternative à `--settings`) |
 
 La réponse s'affiche sur **stdout** ; métadonnées (modèle, tokens) sur **stderr**.
+
+### Configuration standalone (`--config`)
+
+Même structure que les settings Django, dans un fichier JSON. Les clés API restent dans l'environnement (`api_key_env`).
+
+Exemple `inference.json` (modèle embarqué : `completion/examples/inference.dev.json`) :
+
+```json
+{
+  "INFERENCE_DEFAULT_PROVIDER": "openai",
+  "INFERENCE_PROVIDERS": {
+    "openai": {
+      "backend": "completion.providers.openai.OpenAIProvider",
+      "model": "gpt-4o",
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": "https://api.openai.com/v1"
+    }
+  }
+}
+```
+
+```powershell
+$env:OPENAI_API_KEY = "sk-..."
+uv run inference --complete "Hello" --config ./inference.json
+```
+
+**Lambda** — charger au cold start :
+
+```python
+from completion.settings_source import configure_from_file
+from completion.services import complete
+
+configure_from_file("inference.json")
+
+def handler(event, context):
+    result = complete(messages=[{"role": "user", "content": event["prompt"]}])
+    return {"statusCode": 200, "body": result.text}
+```
+
+`--settings` et `--config` sont **mutuellement exclusifs**.
 
 ### Preview architecture (interactive)
 
@@ -96,7 +140,8 @@ uv run inference --preview --html-output docs/architecture.html
 | `uv run inference --preview --no-open` | Affiche les chemins preview sans ouvrir le navigateur |
 | `uv run inference --preview -o FICHIER` | Enregistre en plus une copie SVG locale |
 | `uv run inference --preview --html-output FICHIER.html` | Enregistre le viewer HTML à un chemin fixe |
-| `uv run inference --complete "..." --settings config.settings.dev` | Teste une completion LLM |
+| `uv run inference --complete "..." --settings config.settings.dev` | Teste une completion LLM (Django) |
+| `uv run inference --complete "..." --config inference.json` | Teste une completion (standalone) |
 | `uv run inference -c "..." --provider llama --settings ...` | Completion avec provider explicite |
 
 Constantes Django documentees dans `--help` :
@@ -256,6 +301,8 @@ Snippet complet : `uv run inference --help`
 - `completion/preview.py` / `preview_viewer.py` — preview PlantUML interactive
 - `completion/services.py` — `complete()` (inférence texte)
 - `completion/selectors.py` — lecture settings `INFERENCE_*`
+- `completion/settings_source.py` — config Django / JSON / Lambda
+- `completion/examples/inference.dev.json` — modèle JSON standalone
 - `completion/factory.py` — `LLMFactory`
 - `completion/schemas.py` — `CompletionResult`, `LLMConfig`, `TokenUsage`
 - `completion/providers/` — `OpenAIProvider`, `MistralProvider`, `OllamaProvider`

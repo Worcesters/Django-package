@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from django.conf import settings
-
 from rag.conf import (
     DEFAULT_EMBEDDER_REGISTRY,
     DEFAULT_STORE_REGISTRY,
@@ -21,14 +19,17 @@ from rag.conf import (
 from rag.exceptions import EmbedderNotFoundError, StoreNotFoundError
 from rag.factory import embedder_factory, store_factory
 from rag.schemas import ChunkingConfig, EmbedConfig, StoreConfig
+from rag.settings_source import get_setting
 
 
 def _get_embedders_setting() -> dict[str, Any]:
-    return getattr(settings, SETTING_EMBEDDERS, {})
+    raw = get_setting(SETTING_EMBEDDERS, default={})
+    return dict(raw) if raw else {}
 
 
 def _get_stores_setting() -> dict[str, Any]:
-    return getattr(settings, SETTING_VECTOR_STORES, {})
+    raw = get_setting(SETTING_VECTOR_STORES, default={})
+    return dict(raw) if raw else {}
 
 
 def list_available_embedders() -> list[str]:
@@ -46,7 +47,7 @@ def list_available_stores() -> list[str]:
 
 
 def get_embedder_config(embedder_name: str | None = None) -> EmbedConfig:
-    """Construit un EmbedConfig depuis les settings Django."""
+    """Construit un EmbedConfig depuis la configuration active (Django ou JSON)."""
     embedders = _get_embedders_setting()
     if not embedders:
         msg = (
@@ -55,11 +56,8 @@ def get_embedder_config(embedder_name: str | None = None) -> EmbedConfig:
         )
         raise EmbedderNotFoundError(msg)
 
-    name = embedder_name or getattr(
-        settings,
-        SETTING_DEFAULT_EMBEDDER,
-        next(iter(embedders)),
-    )
+    default_name = get_setting(SETTING_DEFAULT_EMBEDDER, default=None)
+    name = embedder_name or default_name or next(iter(embedders))
     raw = embedders.get(name)
     if raw is None:
         raise EmbedderNotFoundError(
@@ -87,7 +85,7 @@ def get_embedder_config(embedder_name: str | None = None) -> EmbedConfig:
 
 
 def get_store_config(store_name: str | None = None) -> StoreConfig:
-    """Construit un StoreConfig depuis les settings Django."""
+    """Construit un StoreConfig depuis la configuration active (Django ou JSON)."""
     stores = _get_stores_setting()
     if not stores:
         msg = (
@@ -96,11 +94,8 @@ def get_store_config(store_name: str | None = None) -> StoreConfig:
         )
         raise StoreNotFoundError(msg)
 
-    name = store_name or getattr(
-        settings,
-        SETTING_DEFAULT_STORE,
-        next(iter(stores)),
-    )
+    default_name = get_setting(SETTING_DEFAULT_STORE, default=None)
+    name = store_name or default_name or next(iter(stores))
     raw = stores.get(name)
     if raw is None:
         raise StoreNotFoundError(
@@ -123,7 +118,7 @@ def get_store_config(store_name: str | None = None) -> StoreConfig:
 
 def get_chunking_config() -> ChunkingConfig:
     """Lit RAG_CHUNKING ou retourne les défauts."""
-    raw: dict[str, Any] = getattr(settings, SETTING_CHUNKING, {}) or {}
+    raw: dict[str, Any] = dict(get_setting(SETTING_CHUNKING, default={}) or {})
     separators = raw.get("separators", ["\n\n", "\n", ". ", " "])
     words_raw = raw.get("words_per_chunk")
     words_per_chunk = int(words_raw) if words_raw is not None else None
@@ -138,7 +133,7 @@ def get_chunking_config() -> ChunkingConfig:
 
 def get_retrieval_defaults() -> dict[str, Any]:
     """Lit RAG_RETRIEVAL ou retourne les défauts."""
-    return dict(getattr(settings, SETTING_RETRIEVAL, {}) or {"top_k": 5, "min_score": 0.0})
+    return dict(get_setting(SETTING_RETRIEVAL, default={"top_k": 5, "min_score": 0.0}) or {})
 
 
 def get_prompt_template() -> str:
@@ -147,4 +142,4 @@ def get_prompt_template() -> str:
         "Tu réponds uniquement à partir du contexte fourni.\n\n"
         "Contexte:\n{context}\n\nQuestion: {question}"
     )
-    return str(getattr(settings, SETTING_PROMPT_TEMPLATE, default) or default)
+    return str(get_setting(SETTING_PROMPT_TEMPLATE, default=default) or default)

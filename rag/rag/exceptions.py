@@ -24,6 +24,10 @@ class EmbedderNotFoundError(RagError):
     code = "embedder_not_found"
 
 
+class ConfigurationError(RagError):
+    code = "configuration_error"
+
+
 class StoreNotFoundError(RagError):
     code = "store_not_found"
 

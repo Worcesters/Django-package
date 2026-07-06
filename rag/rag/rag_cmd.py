@@ -2,53 +2,10 @@
 
 from __future__ import annotations
 
-import os
 import sys
-from pathlib import Path
 
 from rag.exceptions import RagError
-
-
-def _ensure_project_on_path() -> None:
-    cwd = Path.cwd().resolve()
-    roots: list[Path] = [cwd]
-
-    for parent in [cwd, *cwd.parents]:
-        if (parent / "manage.py").is_file():
-            roots.insert(0, parent)
-            break
-
-    for root in roots:
-        root_str = str(root)
-        if root_str not in sys.path:
-            sys.path.insert(0, root_str)
-
-
-def setup_django(settings_module: str | None) -> None:
-    import django
-
-    module = settings_module or os.environ.get("DJANGO_SETTINGS_MODULE")
-    if not module:
-        msg = (
-            "DJANGO_SETTINGS_MODULE requis.\n"
-            '  Exemple : uv run rag --retrieve "question" --settings config.settings.dev\n'
-            "  Ou export DJANGO_SETTINGS_MODULE=config.settings.dev"
-        )
-        raise SystemExit(msg)
-
-    _ensure_project_on_path()
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", module)
-
-    try:
-        django.setup()
-    except ModuleNotFoundError as exc:
-        top_level = module.split(".", 1)[0]
-        msg = (
-            f"Impossible d'importer '{module}' ({exc}).\n"
-            "  Lance depuis la racine Django (manage.py).\n"
-            f"  Vérifie que '{top_level}' existe."
-        )
-        raise SystemExit(msg) from exc
+from rag.settings_source import bootstrap_runtime
 
 
 def run_index(
@@ -59,8 +16,9 @@ def run_index(
     embedder: str | None = None,
     store: str | None = None,
     settings_module: str | None = None,
+    config_path: str | None = None,
 ) -> None:
-    setup_django(settings_module)
+    bootstrap_runtime(settings_module=settings_module, config_path=config_path)
     from rag.services import index_text
 
     try:
@@ -88,8 +46,9 @@ def run_retrieve(
     embedder: str | None = None,
     store: str | None = None,
     settings_module: str | None = None,
+    config_path: str | None = None,
 ) -> None:
-    setup_django(settings_module)
+    bootstrap_runtime(settings_module=settings_module, config_path=config_path)
     from rag.services import retrieve
 
     try:
@@ -118,8 +77,9 @@ def run_embed(
     *,
     embedder: str | None = None,
     settings_module: str | None = None,
+    config_path: str | None = None,
 ) -> None:
-    setup_django(settings_module)
+    bootstrap_runtime(settings_module=settings_module, config_path=config_path)
     from rag.factory import embedder_factory
     from rag.selectors import get_embedder_config
 

@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import sys
+from pathlib import Path
 
 from completion.cli import build_parser, main
 from completion.complete_cmd import run_complete
@@ -62,13 +63,31 @@ def test_help_includes_complete_flag() -> None:
     help_text = build_parser().format_help()
     assert "--complete" in help_text
     assert "--settings" in help_text
+    assert "--config" in help_text
 
 
-@patch("completion.complete_cmd._ensure_project_on_path")
+def test_cli_config_flag_parsing() -> None:
+    args = build_parser().parse_args(
+        ["--complete", "Hi", "--config", "inference.json"]
+    )
+    assert args.complete == "Hi"
+    assert args.config == Path("inference.json")
+
+
+def test_main_rejects_settings_and_config_together() -> None:
+    try:
+        main(["--complete", "x", "--settings", "tests.settings", "--config", "x.json"])
+    except SystemExit as exc:
+        assert exc.code == 2
+    else:
+        raise AssertionError("expected SystemExit")
+
+
+@patch("completion.complete_cmd.bootstrap_runtime")
 @patch("completion.services.complete")
 def test_run_complete_prints_text(
     mock_complete: object,
-    mock_path: object,
+    mock_bootstrap: object,
 ) -> None:
     mock_complete.return_value = CompletionResult(  # type: ignore[attr-defined]
         text="Salut !",
@@ -78,13 +97,13 @@ def test_run_complete_prints_text(
     )
     result = run_complete("Bonjour", provider="llama", settings_module="tests.settings")
     assert result.text == "Salut !"
-    mock_path.assert_called_once()  # type: ignore[attr-defined]
+    mock_bootstrap.assert_called_once()  # type: ignore[attr-defined]
 
 
 def test_ensure_project_on_path_inserts_cwd(monkeypatch: object, tmp_path: object) -> None:
     from pathlib import Path
 
-    from completion.complete_cmd import _ensure_project_on_path
+    from completion.settings_source import _ensure_project_on_path
 
     workdir = Path(tmp_path)  # type: ignore[arg-type]
     monkeypatch.chdir(workdir)  # type: ignore[attr-defined]

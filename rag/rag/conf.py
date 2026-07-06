@@ -120,4 +120,37 @@ Embedding ≠ LLM chat : pas besoin du package inference pour --embed / --index 
 Installe aussi l'app dans INSTALLED_APPS :
 
   "rag.apps.RagConfig",
+
+Configuration standalone (Lambda, scripts, --config)
+---------------------------------------------------
+
+Même structure que les settings Django, dans un fichier JSON :
+
+  uv run rag --embed "test" --config ./rag.json
+
+Exemple rag.json :
+
+{{
+  "{SETTING_DEFAULT_EMBEDDER}": "mistral",
+  "{SETTING_EMBEDDERS}": {{
+    "mistral": {{
+      "backend": "{DEFAULT_EMBEDDER_REGISTRY["mistral"]}",
+      "model": "mistral-embed",
+      "api_key_env": "MISTRAL_API_KEY",
+      "base_url": "https://api.mistral.ai/v1",
+      "dimensions": 1024
+    }}
+  }},
+  "{SETTING_DEFAULT_STORE}": "memory",
+  "{SETTING_VECTOR_STORES}": {{
+    "memory": {{
+      "backend": "{DEFAULT_STORE_REGISTRY["memory"]}",
+      "collection": "default",
+      "dimensions": 1024
+    }}
+  }}
+}}
+
+Les clés API restent dans l'environnement (api_key_env), pas dans le JSON.
+En code Lambda : configure_from_dict() ou configure_from_file() au cold start.
 """.strip()

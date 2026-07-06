@@ -2,56 +2,11 @@
 
 from __future__ import annotations
 
-import os
 import sys
-from pathlib import Path
 
 from completion.exceptions import InferenceError
 from completion.schemas import CompletionResult
-
-
-def _ensure_project_on_path() -> None:
-    """Ajoute la racine du projet Django hôte à sys.path (comme manage.py)."""
-    cwd = Path.cwd().resolve()
-    roots: list[Path] = [cwd]
-
-    for parent in [cwd, *cwd.parents]:
-        if (parent / "manage.py").is_file():
-            roots.insert(0, parent)
-            break
-
-    for root in roots:
-        root_str = str(root)
-        if root_str not in sys.path:
-            sys.path.insert(0, root_str)
-
-
-def setup_django(settings_module: str | None) -> None:
-    """Initialise Django pour lire INFERENCE_* depuis les settings du projet hôte."""
-    import django
-
-    module = settings_module or os.environ.get("DJANGO_SETTINGS_MODULE")
-    if not module:
-        msg = (
-            "DJANGO_SETTINGS_MODULE requis pour --complete.\n"
-            "  Exemple : uv run inference --complete \"Bonjour\" --settings config.settings.dev\n"
-            "  Ou export DJANGO_SETTINGS_MODULE=config.settings.dev"
-        )
-        raise SystemExit(msg)
-
-    _ensure_project_on_path()
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", module)
-
-    try:
-        django.setup()
-    except ModuleNotFoundError as exc:
-        top_level = module.split(".", 1)[0]
-        msg = (
-            f"Impossible d'importer le module settings '{module}' ({exc}).\n"
-            f"  Lance la commande depuis la racine de ton projet Django (où se trouve manage.py).\n"
-            f"  Vérifie que le package '{top_level}' existe bien (ex. config/settings/dev.py)."
-        )
-        raise SystemExit(msg) from exc
+from completion.settings_source import bootstrap_runtime
 
 
 def run_complete(
@@ -59,9 +14,10 @@ def run_complete(
     *,
     provider: str | None = None,
     settings_module: str | None = None,
+    config_path: str | None = None,
 ) -> CompletionResult:
     """Exécute une completion et affiche le résultat sur stdout."""
-    setup_django(settings_module)
+    bootstrap_runtime(settings_module=settings_module, config_path=config_path)
 
     from completion.services import complete
 

@@ -37,6 +37,10 @@ uv run rag --index "Les chats sont des félins domestiques." --settings config.s
 
 # Rechercher des chunks
 uv run rag --retrieve "félins" --settings config.settings.dev
+
+# Standalone — sans Django (Lambda, scripts, CI)
+uv run rag --embed "test" --config ./rag.json
+uv run rag --index "Mon texte" --config ./rag.json
 ```
 
 ### Workflow de test CLI
@@ -58,9 +62,15 @@ uv run rag -r "framework Python" --settings config.settings.dev --top-k 3
 | `uv run rag --preview` | Viewer HTML interactif (zoom molette, glisser pour pan) |
 | `uv run rag --preview --no-open` | Affiche les chemins preview sans ouvrir le navigateur |
 | `uv run rag --preview --html-output docs/archi.html` | Enregistre le viewer HTML localement |
-| `uv run rag -e "..." --settings ...` | Teste l'embedding |
+| `uv run rag -e "..." --settings ...` | Teste l'embedding (Django) |
+| `uv run rag -e "..." --config rag.json` | Teste l'embedding (standalone) |
 | `uv run rag -i "..." --settings ...` | Indexe un texte |
 | `uv run rag -r "..." --settings ...` | Recherche sémantique |
+
+| Option | Description |
+|--------|-------------|
+| `--settings MODULE` | Module Django settings |
+| `--config FICHIER` | Fichier JSON standalone (alternative à `--settings`) |
 
 ## Configuration Django
 
@@ -124,6 +134,33 @@ RAG_RETRIEVAL = {
 ```
 
 Snippet complet : `uv run rag --help`
+
+### Configuration standalone (`--config`)
+
+Même structure que les settings Django, dans un fichier JSON. Modèle embarqué : `rag/examples/rag.dev.json`.
+
+```powershell
+$env:MISTRAL_API_KEY = "..."
+uv run rag --embed "hello" --config ./rag.json
+uv run rag --index "Texte à indexer" --config ./rag.json
+```
+
+**Lambda** :
+
+```python
+from rag.settings_source import configure_from_file
+from rag.services import retrieve
+
+configure_from_file("rag.json")
+
+def handler(event, context):
+    chunks = retrieve(event["question"], top_k=3)
+    return {"statusCode": 200, "body": [c.text for c in chunks]}
+```
+
+> En production Lambda, prévoir un store persistant (pgvector v2) — `InMemoryStore` ne survit pas entre invocations.
+
+`--settings` et `--config` sont **mutuellement exclusifs**.
 
 ## Utilisation Python
 
@@ -205,6 +242,8 @@ La granularité se configure via `RAG_CHUNKING.strategy` :
 - `rag/chunkers.py` — découpage texte
 - `rag/embedders/` — Ollama, OpenAI, Mistral
 - `rag/stores/` — InMemoryStore (`pgvector` prévu v2)
+- `rag/settings_source.py` — config Django / JSON / Lambda
+- `rag/examples/rag.dev.json` — modèle JSON standalone
 - `rag/conf.py` — constantes `RAG_*`
 - `rag/docs/package_archi.puml` — diagramme d'architecture
 

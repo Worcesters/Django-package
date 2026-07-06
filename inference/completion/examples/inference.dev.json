@@ -1,0 +1,31 @@
+{
+  "INFERENCE_DEFAULT_PROVIDER": "openai",
+  "INFERENCE_PROVIDERS": {
+    "openai": {
+      "backend": "completion.providers.openai.OpenAIProvider",
+      "model": "gpt-4o",
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": "https://api.openai.com/v1",
+      "temperature": 0.2,
+      "max_tokens": 1024,
+      "timeout": 60
+    },
+    "mistral": {
+      "backend": "completion.providers.mistral.MistralProvider",
+      "model": "mistral-large-latest",
+      "api_key_env": "MISTRAL_API_KEY",
+      "base_url": "https://api.mistral.ai/v1",
+      "temperature": 0.3,
+      "max_tokens": 1024,
+      "timeout": 60
+    },
+    "llama": {
+      "backend": "completion.providers.ollama.OllamaProvider",
+      "model": "llama3.2",
+      "base_url": "http://localhost:11434",
+      "temperature": 0.7,
+      "max_tokens": 1024,
+      "timeout": 120
+    }
+  }
+}

@@ -52,6 +52,12 @@ def build_parser() -> RagArgumentParser:
         help="Module Django settings (ex. config.settings.dev).",
     )
     parser.add_argument(
+        "--config",
+        type=Path,
+        metavar="FICHIER",
+        help="Fichier JSON standalone (ex. ./rag.json). Alternative à --settings.",
+    )
+    parser.add_argument(
         "--collection",
         metavar="NOM",
         help="Collection vectorielle (sinon défaut du store).",
@@ -116,6 +122,9 @@ def build_parser() -> RagArgumentParser:
 
 
 def _validate_exclusive(args: argparse.Namespace) -> None:
+    if args.settings and args.config:
+        build_parser().error("--settings et --config sont mutuellement exclusifs.")
+
     actions = sum(
         1
         for flag in (args.index, args.retrieve, args.embed, args.preview, args.readme)
@@ -139,6 +148,7 @@ def main(argv: list[str] | None = None) -> None:
             embedder=args.embedder,
             store=args.store,
             settings_module=args.settings,
+            config_path=str(args.config) if args.config else None,
         )
         return
 
@@ -150,6 +160,7 @@ def main(argv: list[str] | None = None) -> None:
             embedder=args.embedder,
             store=args.store,
             settings_module=args.settings,
+            config_path=str(args.config) if args.config else None,
         )
         return
 
@@ -158,6 +169,7 @@ def main(argv: list[str] | None = None) -> None:
             args.embed,
             embedder=args.embedder,
             settings_module=args.settings,
+            config_path=str(args.config) if args.config else None,
         )
         return
 

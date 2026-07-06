@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from django.conf import settings
-
 from completion.conf import (
     DEFAULT_PROVIDER_REGISTRY,
     SETTING_DEFAULT_PROVIDER,
@@ -15,10 +13,12 @@ from completion.conf import (
 from completion.exceptions import ProviderNotFoundError
 from completion.factory import llm_factory
 from completion.schemas import LLMConfig
+from completion.settings_source import get_setting
 
 
 def _get_providers_setting() -> dict[str, Any]:
-    return getattr(settings, SETTING_PROVIDERS, {})
+    raw = get_setting(SETTING_PROVIDERS, default={})
+    return dict(raw) if raw else {}
 
 
 def list_available_providers() -> list[str]:
@@ -29,20 +29,17 @@ def list_available_providers() -> list[str]:
 
 
 def get_provider_config(provider_name: str | None = None) -> LLMConfig:
-    """Construit un LLMConfig depuis les settings Django du projet hôte."""
+    """Construit un LLMConfig depuis la configuration active (Django ou JSON)."""
     providers = _get_providers_setting()
     if not providers:
         msg = (
-            f"{SETTING_PROVIDERS} est absent ou vide dans les settings Django. "
+            f"{SETTING_PROVIDERS} est absent ou vide. "
             "Lance `uv run inference --help` pour le snippet."
         )
         raise ProviderNotFoundError(msg)
 
-    name = provider_name or getattr(
-        settings,
-        SETTING_DEFAULT_PROVIDER,
-        next(iter(providers)),
-    )
+    default_name = get_setting(SETTING_DEFAULT_PROVIDER, default=None)
+    name = provider_name or default_name or next(iter(providers))
     raw = providers.get(name)
     if raw is None:
         raise ProviderNotFoundError(

@@ -24,6 +24,10 @@ class ProviderNotFoundError(InferenceError):
     code = "provider_not_found"
 
 
+class ConfigurationError(InferenceError):
+    code = "configuration_error"
+
+
 class ProviderConnectionError(InferenceError):
     code = "provider_connection_error"
 

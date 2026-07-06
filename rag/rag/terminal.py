@@ -18,6 +18,7 @@ BLUE = "\033[34m"
 
 _SECTION_MARKERS = (
     "Configuration Django",
+    "Configuration standalone",
     "Constantes requises",
     "Snippet à copier",
     "Variables d'environnement",
