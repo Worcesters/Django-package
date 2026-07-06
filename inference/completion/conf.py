@@ -98,7 +98,7 @@ Configuration standalone (Lambda, scripts, --config)
 
 Même structure que les settings Django, dans un fichier JSON :
 
-  uv run inference --complete "Hello" --config ./inference.json
+  uv run inference --test --config ./inference.json
 
 Exemple inference.json :
 

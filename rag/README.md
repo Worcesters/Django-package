@@ -65,7 +65,7 @@ uv run rag -r "framework Python" --settings config.settings.dev --top-k 3
 | `uv run rag -e "..." --settings ...` | Teste l'embedding (Django) |
 | `uv run rag -e "..." --config rag.json` | Teste l'embedding (standalone) |
 | `uv run rag -i "..." --settings ...` | Indexe un texte |
-| `uv run rag -r "..." --settings ...` | Recherche sémantique |
+| `uv run rag --test` | Lance la suite Pytest du package |
 
 | Option | Description |
 |--------|-------------|
@@ -252,6 +252,6 @@ La granularité se configure via `RAG_CHUNKING.strategy` :
 ```powershell
 cd rag
 uv sync --extra dev
-uv run pytest -q
+uv run rag --test
 uv run rag --preview --no-open
 ```

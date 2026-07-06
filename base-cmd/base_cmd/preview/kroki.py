@@ -1,4 +1,4 @@
-"""Preview PlantUML embarqué (package_archi.puml → viewer HTML interactif)."""
+"""Preview PlantUML via Kroki (partagé entre packages)."""
 
 from __future__ import annotations
 
@@ -7,22 +7,31 @@ import sys
 import tempfile
 import webbrowser
 import zlib
-from importlib import resources
+from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
 
-from rag.preview_viewer import write_interactive_preview
+from base_cmd.docs import PACKAGE_PUML, load_puml as _load_puml
+from base_cmd.preview.viewer import write_interactive_preview
 
-PUML_RELATIVE_PATH = "docs/package_archi.puml"
 KROKI_BASE_URL = "https://kroki.io"
 KROKI_RENDER_URL = f"{KROKI_BASE_URL}/plantuml/svg"
-PREVIEW_TITLE = "rag — architecture"
 
 
-def load_puml() -> str:
-    puml_path = resources.files("rag").joinpath(PUML_RELATIVE_PATH)
-    return puml_path.read_text(encoding="utf-8")
+@dataclass(frozen=True)
+class PreviewConfig:
+    """Configuration preview pour un package hôte."""
+
+    package_module: str
+    title: str
+    default_html_name: str
+    puml_relative_path: str = PACKAGE_PUML
+
+
+def load_puml(config: PreviewConfig) -> str:
+    _ = config.puml_relative_path
+    return _load_puml(config.package_module)
 
 
 def build_kroki_preview_url(
@@ -36,7 +45,11 @@ def build_kroki_preview_url(
     return f"{base}/plantuml/svg/{encoded}"
 
 
-def render_svg(puml_source: str, *, kroki_render_url: str = KROKI_RENDER_URL) -> str:
+def render_svg(
+    puml_source: str,
+    *,
+    kroki_render_url: str = KROKI_RENDER_URL,
+) -> str:
     response = httpx.post(
         kroki_render_url,
         content=puml_source.encode("utf-8"),
@@ -47,23 +60,21 @@ def render_svg(puml_source: str, *, kroki_render_url: str = KROKI_RENDER_URL) ->
     return response.text
 
 
-def _default_html_path() -> Path:
-    return Path(tempfile.gettempdir()) / "rag-architecture-preview.html"
-
-
 def run_preview(
+    config: PreviewConfig,
     *,
     output: Path | None = None,
     html_output: Path | None = None,
     no_open: bool = False,
     kroki_base_url: str = KROKI_BASE_URL,
 ) -> None:
+    """Affiche le diagramme PlantUML dans un viewer HTML interactif."""
     try:
-        puml = load_puml()
+        puml = load_puml(config)
         preview_url = build_kroki_preview_url(puml, kroki_base_url=kroki_base_url)
     except FileNotFoundError:
         print(
-            f"Erreur : {PUML_RELATIVE_PATH} introuvable dans le package rag.",
+            f"Erreur : {PACKAGE_PUML} introuvable dans {config.package_module}.",
             file=sys.stderr,
         )
         raise SystemExit(1) from None
@@ -72,18 +83,18 @@ def run_preview(
     try:
         svg = render_svg(puml, kroki_render_url=kroki_render_url)
     except httpx.HTTPError as exc:
-        print(f"Erreur lors du rendu Kroki : {exc}", file=sys.stderr)
-        print(f"URL statique (sans zoom) : {preview_url}", file=sys.stderr)
+        print(f"Erreur Kroki : {exc}", file=sys.stderr)
+        print(f"URL statique : {preview_url}", file=sys.stderr)
         if not no_open:
             webbrowser.open(preview_url)
         raise SystemExit(1) from None
 
+    default_html = Path(tempfile.gettempdir()) / config.default_html_name
     html_path = write_interactive_preview(
-        html_output or _default_html_path(),
+        html_output or default_html,
         svg,
-        title=PREVIEW_TITLE,
+        title=config.title,
     )
-
     print(f"Preview interactive : file:///{html_path.as_posix()}")
     print(f"URL Kroki (statique) : {preview_url}")
 

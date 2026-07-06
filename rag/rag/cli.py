@@ -1,33 +1,33 @@
-"""Point d'entrée CLI : uv run rag [--help] [--preview] [--index] [--retrieve]."""
+"""Point d'entrée CLI : uv run rag [--help] [--preview] [--test] [--index] [--retrieve]."""
 
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
-from typing import TextIO
+
+from base_cmd.package_cli import (
+    PackageCliConfig,
+    build_package_parser,
+    dispatch_shared_commands,
+    print_default_help,
+    validate_settings_config_exclusive,
+)
 
 from rag.conf import format_settings_help
-from rag.preview import KROKI_BASE_URL, run_preview
 from rag.rag_cmd import run_embed, run_index, run_retrieve
-from rag.readme import run_readme
-from rag.terminal import print_help
+
+PACKAGE_CLI = PackageCliConfig(
+    prog="rag",
+    package_module="rag",
+    description="CLI rag : configuration, preview d'architecture, tests et commandes RAG.",
+    preview_title="rag — architecture",
+    setting_prefix="RAG",
+    module_prefix="rag",
+    settings_epilog=format_settings_help(),
+)
 
 
-class RagArgumentParser(argparse.ArgumentParser):
-    """ArgumentParser avec aide colorée."""
-
-    def print_help(self, file: TextIO | None = None) -> None:
-        print_help(self.format_help(), file=file or sys.stdout)
-
-
-def build_parser() -> RagArgumentParser:
-    parser = RagArgumentParser(
-        prog="rag",
-        description="CLI rag : configuration, preview d'architecture et test RAG.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=format_settings_help(),
-    )
+def _register_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--index",
         "-i",
@@ -45,17 +45,6 @@ def build_parser() -> RagArgumentParser:
         "-e",
         metavar="TEXTE",
         help="Teste l'embedder (affiche dimensions + début du vecteur).",
-    )
-    parser.add_argument(
-        "--settings",
-        metavar="MODULE",
-        help="Module Django settings (ex. config.settings.dev).",
-    )
-    parser.add_argument(
-        "--config",
-        type=Path,
-        metavar="FICHIER",
-        help="Fichier JSON standalone (ex. ./rag.json). Alternative à --settings.",
     )
     parser.add_argument(
         "--collection",
@@ -83,62 +72,32 @@ def build_parser() -> RagArgumentParser:
         metavar="NOM",
         help="Vector store explicite (sinon RAG_DEFAULT_STORE).",
     )
-    parser.add_argument(
-        "--readme",
-        action="store_true",
-        help="Affiche le README du package (coloré) dans le terminal.",
-    )
-    parser.add_argument(
-        "--preview",
-        action="store_true",
-        help="Affiche le diagramme PlantUML (viewer HTML zoom/pan via Kroki).",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        default=None,
-        metavar="FICHIER",
-        help="Avec --preview : enregistre aussi le SVG localement.",
-    )
-    parser.add_argument(
-        "--html-output",
-        type=Path,
-        default=None,
-        metavar="FICHIER",
-        help="Avec --preview : chemin du viewer HTML (défaut : fichier temp).",
-    )
-    parser.add_argument(
-        "--no-open",
-        action="store_true",
-        help="Avec --preview : n'ouvre pas le navigateur.",
-    )
-    parser.add_argument(
-        "--kroki-base-url",
-        default=KROKI_BASE_URL,
-        help="Avec --preview : URL de base Kroki.",
-    )
-    return parser
 
 
-def _validate_exclusive(args: argparse.Namespace) -> None:
-    if args.settings and args.config:
-        build_parser().error("--settings et --config sont mutuellement exclusifs.")
+def build_parser():
+    return build_package_parser(PACKAGE_CLI, register_args=_register_args)
 
+
+def _validate_exclusive(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    validate_settings_config_exclusive(parser, args)
+    has_index = args.index is not None
+    has_retrieve = args.retrieve is not None
+    has_embed = args.embed is not None
     actions = sum(
         1
-        for flag in (args.index, args.retrieve, args.embed, args.preview, args.readme)
-        if flag not in (None, False)
+        for flag in (has_index, has_retrieve, has_embed, args.preview, args.readme, args.test)
+        if flag
     )
     if actions > 1:
-        build_parser().error(
-            "--index, --retrieve, --embed, --preview et --readme sont mutuellement exclusifs."
+        parser.error(
+            "--index, --retrieve, --embed, --preview, --readme et --test sont mutuellement exclusifs."
         )
 
 
 def main(argv: list[str] | None = None) -> None:
-    args = build_parser().parse_args(argv)
-    _validate_exclusive(args)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    _validate_exclusive(parser, args)
 
     if args.index is not None:
         run_index(
@@ -173,20 +132,10 @@ def main(argv: list[str] | None = None) -> None:
         )
         return
 
-    if args.preview:
-        run_preview(
-            output=args.output,
-            html_output=args.html_output,
-            no_open=args.no_open,
-            kroki_base_url=args.kroki_base_url,
-        )
+    if dispatch_shared_commands(args, PACKAGE_CLI):
         return
 
-    if args.readme:
-        run_readme()
-        return
-
-    print_help(build_parser().format_help())
+    print_default_help(parser)
 
 
 if __name__ == "__main__":

@@ -5,26 +5,26 @@ from unittest.mock import patch
 import sys
 from pathlib import Path
 
-from completion.cli import build_parser, main
+from completion.cli import PACKAGE_CLI, build_parser, main
 from completion.complete_cmd import run_complete
 from completion.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
 from completion.factory import llm_factory
-from completion.preview_viewer import build_interactive_html
-from completion.preview import build_kroki_preview_url, load_puml
+from base_cmd.preview import build_interactive_html, build_kroki_preview_url
+from base_cmd.readme import load_readme
+from base_cmd.docs import load_puml
+from base_cmd.terminal import colorize_help, colorize_readme
 from completion.schemas import CompletionResult, TokenUsage
-from completion.terminal import colorize_help, colorize_readme
-from completion.readme import load_readme
 
 
 def test_load_puml_returns_startuml_block() -> None:
-    content = load_puml()
+    content = load_puml(PACKAGE_CLI.package_module)
     assert "@startuml" in content
     assert "@enduml" in content
     assert "LLMProvider" in content
 
 
 def test_build_kroki_preview_url_points_to_kroki() -> None:
-    url = build_kroki_preview_url(load_puml())
+    url = build_kroki_preview_url(load_puml(PACKAGE_CLI.package_module))
     assert url.startswith("https://kroki.io/plantuml/svg/")
     assert len(url) > len("https://kroki.io/plantuml/svg/")
 
@@ -50,33 +50,32 @@ def test_cli_preview_flag_parsing() -> None:
     assert args.no_open is True
 
 
-def test_cli_complete_flag_parsing() -> None:
+def test_cli_test_flag_parsing() -> None:
     args = build_parser().parse_args(
-        ["--complete", "Bonjour", "--provider", "llama", "--settings", "tests.settings"]
+        ["--test", "--settings", "tests.settings"]
     )
-    assert args.complete == "Bonjour"
-    assert args.provider == "llama"
+    assert args.test is True
     assert args.settings == "tests.settings"
 
 
-def test_help_includes_complete_flag() -> None:
+def test_help_includes_test_flag() -> None:
     help_text = build_parser().format_help()
-    assert "--complete" in help_text
+    assert "--test" in help_text
     assert "--settings" in help_text
     assert "--config" in help_text
 
 
 def test_cli_config_flag_parsing() -> None:
     args = build_parser().parse_args(
-        ["--complete", "Hi", "--config", "inference.json"]
+        ["--test", "--config", "inference.json"]
     )
-    assert args.complete == "Hi"
+    assert args.test is True
     assert args.config == Path("inference.json")
 
 
 def test_main_rejects_settings_and_config_together() -> None:
     try:
-        main(["--complete", "x", "--settings", "tests.settings", "--config", "x.json"])
+        main(["--test", "--settings", "tests.settings", "--config", "x.json"])
     except SystemExit as exc:
         assert exc.code == 2
     else:
@@ -116,9 +115,9 @@ def test_ensure_project_on_path_inserts_cwd(monkeypatch: object, tmp_path: objec
     assert str(workdir.resolve()) in sys.path
 
 
-def test_main_rejects_complete_and_preview_together(capsys: object) -> None:
+def test_main_rejects_test_and_preview_together() -> None:
     try:
-        main(["--complete", "x", "--preview", "--settings", "tests.settings"])
+        main(["--test", "--preview", "--settings", "tests.settings"])
     except SystemExit as exc:
         assert exc.code == 2
     else:
@@ -136,27 +135,27 @@ def test_cli_readme_flag_parsing() -> None:
 
 
 def test_load_readme_returns_markdown() -> None:
-    content = load_readme()
+    content = load_readme(PACKAGE_CLI.package_module)
     assert content.startswith("# inference")
 
 
 def test_colorize_readme_adds_ansi_when_forced(monkeypatch: object) -> None:
     monkeypatch.setenv("FORCE_COLOR", "1")  # type: ignore[attr-defined]
     monkeypatch.delenv("NO_COLOR", raising=False)  # type: ignore[attr-defined]
-    colored = colorize_readme(load_readme())
+    colored = colorize_readme(load_readme(PACKAGE_CLI.package_module))
     assert "\033[" in colored
     assert "# inference" in colored or "inference" in colored
 
 
-@patch("completion.readme.print_readme")
+@patch("base_cmd.readme._print_readme")
 def test_main_readme_flag(mock_print: object) -> None:
     main(["--readme"])
     mock_print.assert_called_once()  # type: ignore[attr-defined]
 
 
-def test_main_rejects_complete_and_readme_together() -> None:
+def test_main_rejects_test_and_readme_together() -> None:
     try:
-        main(["--complete", "x", "--readme"])
+        main(["--test", "--readme"])
     except SystemExit as exc:
         assert exc.code == 2
     else:
@@ -165,14 +164,18 @@ def test_main_rejects_complete_and_readme_together() -> None:
 
 def test_colorize_help_disabled_with_no_color(monkeypatch: object) -> None:
     monkeypatch.setenv("NO_COLOR", "1")  # type: ignore[attr-defined]
+    monkeypatch.delenv("FORCE_COLOR", raising=False)  # type: ignore[attr-defined]
     raw = build_parser().format_help()
-    assert colorize_help(raw) == raw
+    assert colorize_help(raw, style=PACKAGE_CLI.terminal_style) == raw
 
 
 def test_colorize_help_adds_ansi_when_forced(monkeypatch: object) -> None:
     monkeypatch.setenv("FORCE_COLOR", "1")  # type: ignore[attr-defined]
     monkeypatch.delenv("NO_COLOR", raising=False)  # type: ignore[attr-defined]
-    colored = colorize_help("usage: inference [-h]\n\noptions:\n  --complete")
+    colored = colorize_help(
+        "usage: inference [-h]\n\noptions:\n  --test",
+        style=PACKAGE_CLI.terminal_style,
+    )
     assert "\033[" in colored
     assert "usage:" in colored
 

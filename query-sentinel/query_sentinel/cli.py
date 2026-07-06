@@ -1,103 +1,52 @@
-"""Point d'entrée CLI : uv run query-sentinel [--help] [--preview] [--status]."""
+"""Point d'entrée CLI : uv run query-sentinel [--help] [--preview] [--test] [--status]."""
 
 from __future__ import annotations
 
 import argparse
-import sys
-from pathlib import Path
-from typing import TextIO
+
+from base_cmd.package_cli import (
+    PackageCliConfig,
+    build_package_parser,
+    dispatch_shared_commands,
+    print_default_help,
+    validate_shared_exclusive,
+)
 
 from query_sentinel.conf import format_settings_help
-from query_sentinel.preview import KROKI_BASE_URL, run_preview
-from query_sentinel.readme import run_readme
 from query_sentinel.status_cmd import run_status
-from query_sentinel.terminal import print_help
+
+PACKAGE_CLI = PackageCliConfig(
+    prog="query-sentinel",
+    package_module="query_sentinel",
+    description="CLI query-sentinel : N+1, surveillance SQL, preview architecture.",
+    preview_title="query-sentinel — architecture",
+    setting_prefix="QUERY_SENTINEL",
+    module_prefix="query_sentinel",
+    settings_epilog=format_settings_help(),
+)
 
 
-class SentinelArgumentParser(argparse.ArgumentParser):
-    """ArgumentParser avec aide colorée."""
-
-    def print_help(self, file: TextIO | None = None) -> None:
-        print_help(self.format_help(), file=file or sys.stdout)
-
-
-def build_parser() -> SentinelArgumentParser:
-    parser = SentinelArgumentParser(
-        prog="query-sentinel",
-        description="CLI query-sentinel : N+1, surveillance SQL, preview architecture.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=format_settings_help(),
-    )
+def _register_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--status",
         action="store_true",
         help="Affiche la configuration active (JSON).",
     )
-    parser.add_argument(
-        "--settings",
-        metavar="MODULE",
-        help="Avec --status : module Django settings (ex. config.settings.dev).",
-    )
-    parser.add_argument(
-        "--config",
-        type=Path,
-        metavar="FICHIER",
-        help="Avec --status : fichier JSON standalone (ex. ./sentinel.json).",
-    )
-    parser.add_argument(
-        "--readme",
-        action="store_true",
-        help="Affiche le README du package (coloré) dans le terminal.",
-    )
-    parser.add_argument(
-        "--preview",
-        action="store_true",
-        help="Affiche le diagramme PlantUML (viewer HTML zoom/pan via Kroki).",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        default=None,
-        metavar="FICHIER",
-        help="Avec --preview : enregistre aussi le SVG localement.",
-    )
-    parser.add_argument(
-        "--html-output",
-        type=Path,
-        default=None,
-        metavar="FICHIER",
-        help="Avec --preview : chemin du viewer HTML (défaut : fichier temp).",
-    )
-    parser.add_argument(
-        "--no-open",
-        action="store_true",
-        help="Avec --preview : n'ouvre pas le navigateur.",
-    )
-    parser.add_argument(
-        "--kroki-base-url",
-        default=KROKI_BASE_URL,
-        help="Avec --preview : URL de base Kroki.",
-    )
-    return parser
 
 
-def _validate_exclusive(args: argparse.Namespace) -> None:
-    if args.settings and args.config:
-        build_parser().error("--settings et --config sont mutuellement exclusifs.")
-
-    actions = sum(
-        1
-        for flag in (args.status, args.preview, args.readme)
-        if flag not in (None, False)
-    )
-    if actions > 1:
-        build_parser().error("--status, --preview et --readme sont mutuellement exclusifs.")
+def build_parser():
+    return build_package_parser(PACKAGE_CLI, register_args=_register_args)
 
 
 def main(argv: list[str] | None = None) -> None:
-    args = build_parser().parse_args(argv)
-    _validate_exclusive(args)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    validate_shared_exclusive(
+        parser,
+        args,
+        extra_flag_names=("status",),
+        message="--status, --preview, --readme et --test sont mutuellement exclusifs.",
+    )
 
     if args.status:
         run_status(
@@ -106,20 +55,10 @@ def main(argv: list[str] | None = None) -> None:
         )
         return
 
-    if args.preview:
-        run_preview(
-            output=args.output,
-            html_output=args.html_output,
-            no_open=args.no_open,
-            kroki_base_url=args.kroki_base_url,
-        )
+    if dispatch_shared_commands(args, PACKAGE_CLI):
         return
 
-    if args.readme:
-        run_readme()
-        return
-
-    print_help(build_parser().format_help())
+    print_default_help(parser)
 
 
 if __name__ == "__main__":

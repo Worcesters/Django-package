@@ -70,6 +70,22 @@ wheels = [
 ]
 
 [[package]]
+name = "base-cmd"
+version = "0.1.0"
+source = { directory = "../base-cmd" }
+dependencies = [
+    { name = "httpx" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "certifi"
 version = "2026.6.17"
 source = { registry = "https://pypi.org/simple" }
@@ -152,6 +168,7 @@ name = "inference"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "base-cmd" },
     { name = "django" },
     { name = "httpx" },
 ]
@@ -166,6 +183,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "base-cmd", directory = "../base-cmd" },
     { name = "django", specifier = ">=5.0" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.0" },

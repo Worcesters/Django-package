@@ -1,125 +1,39 @@
-"""Point d'entrée CLI : uv run inference [--help] [--preview] [--complete]."""
+"""Point d'entrée CLI : uv run inference [--help] [--preview] [--test]."""
 
 from __future__ import annotations
 
-import argparse
-import sys
-from pathlib import Path
-from typing import TextIO
+from base_cmd.package_cli import (
+    PackageCliConfig,
+    build_package_parser,
+    dispatch_shared_commands,
+    print_default_help,
+    validate_shared_exclusive,
+)
 
-from completion.complete_cmd import run_complete
 from completion.conf import format_settings_help
-from completion.preview import KROKI_BASE_URL, run_preview
-from completion.readme import run_readme
-from completion.terminal import print_help
+
+PACKAGE_CLI = PackageCliConfig(
+    prog="inference",
+    package_module="completion",
+    description="CLI inference : configuration, preview d'architecture et tests Pytest.",
+    preview_title="inference — architecture",
+    setting_prefix="INFERENCE",
+    module_prefix="completion",
+    settings_epilog=format_settings_help(),
+)
 
 
-class InferenceArgumentParser(argparse.ArgumentParser):
-    """ArgumentParser avec aide colorée (-h / --help inclus)."""
-
-    def print_help(self, file: TextIO | None = None) -> None:
-        print_help(self.format_help(), file=file or sys.stdout)
-
-
-def build_parser() -> InferenceArgumentParser:
-    parser = InferenceArgumentParser(
-        prog="inference",
-        description="CLI inference : configuration, preview d'architecture et test de completion.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=format_settings_help(),
-    )
-    parser.add_argument(
-        "--complete",
-        "-c",
-        metavar="PROMPT",
-        help="Envoie un message au provider configuré et affiche la réponse.",
-    )
-    parser.add_argument(
-        "--provider",
-        metavar="NOM",
-        help="Avec --complete : provider à utiliser (sinon INFERENCE_DEFAULT_PROVIDER).",
-    )
-    parser.add_argument(
-        "--settings",
-        metavar="MODULE",
-        help="Avec --complete : module Django settings (ex. config.settings.dev).",
-    )
-    parser.add_argument(
-        "--config",
-        type=Path,
-        metavar="FICHIER",
-        help="Avec --complete : fichier JSON standalone (ex. ./inference.json).",
-    )
-    parser.add_argument(
-        "--readme",
-        action="store_true",
-        help="Affiche le README du package (coloré) dans le terminal.",
-    )
-    parser.add_argument(
-        "--preview",
-        action="store_true",
-        help="Affiche le diagramme PlantUML (viewer HTML zoom/pan via Kroki).",
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        default=None,
-        metavar="FICHIER",
-        help="Avec --preview : enregistre aussi le SVG localement.",
-    )
-    parser.add_argument(
-        "--html-output",
-        type=Path,
-        default=None,
-        metavar="FICHIER",
-        help="Avec --preview : chemin du viewer HTML (défaut : fichier temp).",
-    )
-    parser.add_argument(
-        "--no-open",
-        action="store_true",
-        help="Avec --preview : n'ouvre pas le navigateur (affiche l'URL Kroki).",
-    )
-    parser.add_argument(
-        "--kroki-base-url",
-        default=KROKI_BASE_URL,
-        help="Avec --preview : URL de base du service Kroki (défaut : kroki.io).",
-    )
-    return parser
+def build_parser():
+    return build_package_parser(PACKAGE_CLI)
 
 
 def main(argv: list[str] | None = None) -> None:
-    args = build_parser().parse_args(argv)
-
-    if args.complete is not None:
-        if args.preview or args.readme:
-            build_parser().error("--complete est incompatible avec --preview et --readme.")
-        if args.settings and args.config:
-            build_parser().error("--settings et --config sont mutuellement exclusifs.")
-        run_complete(
-            args.complete,
-            provider=args.provider,
-            settings_module=args.settings,
-            config_path=str(args.config) if args.config else None,
-        )
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    validate_shared_exclusive(parser, args)
+    if dispatch_shared_commands(args, PACKAGE_CLI):
         return
-
-    if args.preview:
-        if args.readme:
-            build_parser().error("--preview et --readme sont mutuellement exclusifs.")
-        run_preview(
-            output=args.output,
-            html_output=args.html_output,
-            no_open=args.no_open,
-            kroki_base_url=args.kroki_base_url,
-        )
-        return
-
-    if args.readme:
-        run_readme()
-        return
-
-    print_help(build_parser().format_help())
+    print_default_help(parser)
 
 
 if __name__ == "__main__":

@@ -23,8 +23,10 @@ package "query_sentinel" as pkg {
   }
 
   package "analyzer.py" as pkg_analyzer {
-    class normalize_sql(sql): str
-    class analyze_queries(records, threshold): AnalysisReport
+    class QueryAnalyzer {
+      +normalize_sql(sql): str
+      +analyze_queries(records, threshold): AnalysisReport
+    }
   }
 
   package "services.py" as pkg_services {
@@ -42,10 +44,12 @@ package "query_sentinel" as pkg {
   }
 
   package "settings_source.py" as pkg_settings {
-    class configure_from_dict(data): None
-    class configure_from_file(path): None
-    class get_setting(name): Any
-    class bootstrap_runtime(): None
+    class SettingsRuntime {
+      +configure_from_dict(data): None
+      +configure_from_file(path): None
+      +get_setting(name): Any
+      +bootstrap_runtime(): None
+    }
   }
 
   package "decorators.py / mixins.py" as pkg_tests {
@@ -54,11 +58,13 @@ package "query_sentinel" as pkg {
   }
 
   package "logging_integration.py" as pkg_log {
-    class log_analysis_event(report, path, method): None
+    class LogIntegration {
+      +log_analysis_event(report, path, method): None
+    }
   }
 
   package "conf.py" as pkg_conf {
-    class QUERY_SENTINEL_* <<settings>>
+    class SentinelSettings <<settings>>
   }
 }
 
@@ -70,19 +76,19 @@ package "projet hôte" as host {
 
 QuerySentinelMiddleware -down-> query_collection : enveloppe requête
 query_collection -down-> DjangoView : capture SQL
-DjangoView -down-> analyze_queries : via services
-analyze_queries -down-> SentinelServices
-SentinelServices -down-> log_analysis_event : si seuil prod
+DjangoView -down-> QueryAnalyzer : via services
+QueryAnalyzer -down-> SentinelServices
+SentinelServices -down-> LogIntegration : si seuil prod
 SentinelServices -down-> QuerySentinelMiddleware : headers DEBUG
 
 fail_on_n_plus_one -down-> query_collection
 SentinelTestMixin -down-> query_collection
 PytestTest ..> fail_on_n_plus_one
 
-SentinelSelectors -down-> pkg_settings : get_setting
-SentinelSelectors -down-> pkg_conf
+SentinelSelectors -down-> SettingsRuntime : get_setting
+SentinelSelectors -down-> SentinelSettings
 
-note bottom of pkg_conf
+note bottom of SentinelSettings
   QUERY_SENTINEL_ENABLED = True
   QUERY_SENTINEL_N_PLUS_ONE_THRESHOLD = 3
   QUERY_SENTINEL_DEBUG_HEADERS = True

@@ -33,47 +33,36 @@ uv run inference --preview
 # Preview sans ouvrir le navigateur (URL Kroki dans le terminal)
 uv run inference --preview --no-open
 
-# Test de completion (projet Django hôte configuré)
-uv run inference --complete "Bonjour, qui es-tu ?" --settings config.settings.dev
+# Lancer les tests Pytest
+uv run inference --test
 
-# Provider explicite (Ollama local)
-uv run inference -c "2+2 ?" --provider llama --settings config.settings.dev
+# Tests avec settings Django explicites
+uv run inference --test --settings config.settings.dev
 
-# Standalone — sans Django (Lambda, scripts, CI)
-uv run inference --complete "Hello" --config ./inference.json
+# Standalone — config JSON avant tests
+uv run inference --test --config ./inference.json
 ```
 
-### Test de completion (`--complete`)
+### Tests Pytest (`--test`)
 
-La commande appelle `complete()` avec les settings Django du projet hôte (`INFERENCE_*`).
-
-**Prérequis :**
-
-1. `INFERENCE_DEFAULT_PROVIDER` et `INFERENCE_PROVIDERS` définis dans tes settings
-2. `--settings` pointant vers ton module Django (ou `DJANGO_SETTINGS_MODULE` exporté)
-3. Clé API / Ollama accessible selon le provider
+Lance la suite de tests du package (`uv run pytest` équivalent).
 
 ```powershell
-# Depuis ton projet Django (package installé via uv add)
-cd chemin/vers/votre/projet-django
-uv run inference --complete "Explique Django en une phrase." --settings config.settings.dev
+cd chemin/vers/inference
+uv run inference --test
 
-# Provider explicite
-uv run inference -c "Hello" --provider openai --settings config.settings.dev
+# Avec module Django settings
+uv run inference --test --settings tests.settings
 
-# Variable d'environnement à la place de --settings
-$env:DJANGO_SETTINGS_MODULE = "config.settings.dev"
-uv run inference --complete "Hello"
+# Arguments pytest supplémentaires (après --test)
+uv run inference --test -- -v -k test_factory
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--complete`, `-c PROMPT` | Message utilisateur envoyé au LLM |
-| `--provider NOM` | Provider dans `INFERENCE_PROVIDERS` (sinon défaut) |
+| `--test` | Lance la suite Pytest du package |
 | `--settings MODULE` | Module settings Django (`config.settings.dev`) |
-| `--config FICHIER` | Fichier JSON standalone (alternative à `--settings`) |
-
-La réponse s'affiche sur **stdout** ; métadonnées (modèle, tokens) sur **stderr**.
+| `--config FICHIER` | Fichier JSON standalone (pour commandes métier) |
 
 ### Configuration standalone (`--config`)
 
@@ -97,7 +86,7 @@ Exemple `inference.json` (modèle embarqué : `completion/examples/inference.dev
 
 ```powershell
 $env:OPENAI_API_KEY = "sk-..."
-uv run inference --complete "Hello" --config ./inference.json
+uv run inference --test --config ./inference.json
 ```
 
 **Lambda** — charger au cold start :
@@ -140,8 +129,8 @@ uv run inference --preview --html-output docs/architecture.html
 | `uv run inference --preview --no-open` | Affiche les chemins preview sans ouvrir le navigateur |
 | `uv run inference --preview -o FICHIER` | Enregistre en plus une copie SVG locale |
 | `uv run inference --preview --html-output FICHIER.html` | Enregistre le viewer HTML à un chemin fixe |
-| `uv run inference --complete "..." --settings config.settings.dev` | Teste une completion LLM (Django) |
-| `uv run inference --complete "..." --config inference.json` | Teste une completion (standalone) |
+| `uv run inference --test` | Lance la suite Pytest |
+| `uv run inference --test --settings config.settings.dev` | Tests avec settings Django |
 | `uv run inference -c "..." --provider llama --settings ...` | Completion avec provider explicite |
 
 Constantes Django documentees dans `--help` :
@@ -297,8 +286,8 @@ Snippet complet : `uv run inference --help`
 ## Structure
 
 - `completion/cli.py` — commande `uv run inference`
-- `completion/complete_cmd.py` — orchestration `--complete`
-- `completion/preview.py` / `preview_viewer.py` — preview PlantUML interactive
+- `completion/complete_cmd.py` — orchestration completion (usage programmatique / tests)
+- `completion/preview.py` — preview PlantUML (via `base-cmd`)
 - `completion/services.py` — `complete()` (inférence texte)
 - `completion/selectors.py` — lecture settings `INFERENCE_*`
 - `completion/settings_source.py` — config Django / JSON / Lambda

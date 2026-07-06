@@ -114,8 +114,8 @@ def bootstrap_runtime(
 
     raise SystemExit(
         "Configuration requise pour cette commande.\n"
-        '  Django : uv run inference --complete "..." --settings config.settings.dev\n'
-        '  Standalone : uv run inference --complete "..." --config ./inference.json\n'
+        '  Django : uv run inference --test --settings config.settings.dev\n'
+        '  Standalone : uv run inference --test --config ./inference.json\n'
         "  Ou export DJANGO_SETTINGS_MODULE=config.settings.dev"
     )
 

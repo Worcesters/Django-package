@@ -1,0 +1,116 @@
+@startuml package_archi
+title payload-sentinel — Gardien des fuites de données API
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "payload_sentinel" as pkg {
+  package "HTTP" as pkg_http {
+    class PayloadSentinelMiddleware {
+      +__call__(request): HttpResponse
+    }
+  }
+
+  package "collector.py" as pkg_collector {
+    class sql_column_collection <<context>> {
+      +captures: list[SqlCapture]
+    }
+    note right of sql_column_collection
+      execute_wrapper Django
+      extraction colonnes SELECT
+    end note
+  }
+
+  package "sql_parser.py" as pkg_parser {
+    class SqlParser {
+      +extract_columns_from_sql(sql): tuple
+    }
+  }
+
+  package "response_inspector.py" as pkg_response {
+    class ResponseInspector {
+      +flatten_field_paths(payload): list
+      +detect_sensitive_fields(payload, patterns): list
+    }
+  }
+
+  package "analyzer.py" as pkg_analyzer {
+    class PayloadAnalyzer {
+      +analyze_payload(captures, response, config): PayloadAnalysisReport
+    }
+  }
+
+  package "services.py" as pkg_services {
+    class PayloadServices {
+      +build_payload_report(captures, response, config): PayloadAnalysisReport
+      +enforce_policies(report, config): None
+      +block_sensitive_response(report): HttpResponse
+    }
+  }
+
+  package "selectors.py" as pkg_selectors {
+    class PayloadSelectors {
+      +get_payload_config(): PayloadSentinelConfig
+    }
+  }
+
+  package "settings_source.py" as pkg_settings {
+    class SettingsRuntime {
+      +configure_from_dict(data): None
+      +configure_from_file(path): None
+      +get_setting(name): Any
+      +bootstrap_runtime(): None
+    }
+  }
+
+  package "decorators.py / mixins.py" as pkg_tests {
+    class fail_on_overfetch <<decorator>>
+    class fail_on_sensitive_leak <<decorator>>
+    class payload_sentinel_guard <<decorator>>
+    class PayloadSentinelTestMixin <<mixin>>
+  }
+
+  package "logging_integration.py" as pkg_log {
+    class LogIntegration {
+      +log_payload_event(report, path, method): None
+    }
+  }
+
+  package "conf.py" as pkg_conf {
+    class PayloadSettings <<settings>>
+  }
+}
+
+package "projet hôte" as host {
+  class DjangoAPIView <<DRF CBV>>
+  class PytestTest <<test>>
+}
+
+PayloadSentinelMiddleware -down-> sql_column_collection : enveloppe requête
+sql_column_collection -down-> DjangoAPIView : capture SQL
+DjangoAPIView -down-> PayloadAnalyzer : via services
+PayloadAnalyzer -down-> PayloadServices
+PayloadServices -down-> LogIntegration : alerte prod
+PayloadServices -down-> PayloadSentinelMiddleware : headers DEBUG
+
+fail_on_overfetch -down-> sql_column_collection
+payload_sentinel_guard -down-> sql_column_collection
+PytestTest ..> fail_on_overfetch
+
+PayloadSelectors -down-> SettingsRuntime : get_setting
+PayloadSelectors -down-> PayloadSettings
+
+note bottom of PayloadSettings
+  PAYLOAD_SENTINEL_ENABLED = True
+  PAYLOAD_SENTINEL_SENSITIVE_FIELDS = [...]
+  PAYLOAD_SENTINEL_OVERFETCH_THRESHOLD = 0.85
+  PAYLOAD_SENTINEL_BLOCK_SENSITIVE_LEAK = True
+
+  Headers DEBUG :
+  X-Django-Payload-SQL-Columns
+  X-Django-Payload-Overfetch-Ratio
+  X-Django-Payload-Sensitive-Leak
+  X-Django-Payload-Debug
+end note
+
+@enduml

@@ -23,6 +23,9 @@ uv run query-sentinel --readme
 # Preview architecture (zoom/pan)
 uv run query-sentinel --preview
 
+# Lancer les tests Pytest
+uv run query-sentinel --test
+
 # Vérifier la config active (Django)
 uv run query-sentinel --status --settings config.settings.dev
 
@@ -35,6 +38,7 @@ uv run query-sentinel --status --config ./sentinel.json
 | `--help` | Aide CLI colorée + snippet settings |
 | `--readme` | README coloré dans le terminal |
 | `--preview` | Diagramme PlantUML interactif |
+| `--test` | Lance la suite Pytest du package |
 | `--status` | Affiche la config résolue (JSON) |
 | `--settings MODULE` | Config depuis Django settings |
 | `--config FICHIER` | Config depuis JSON standalone |
@@ -190,6 +194,7 @@ Modèle JSON : `query_sentinel/examples/sentinel.dev.json`
 ```powershell
 cd query-sentinel
 uv sync --extra dev
-uv run pytest -q
+uv run query-sentinel --test
+uv run query-sentinel --help
 uv run query-sentinel --preview --no-open
 ```
