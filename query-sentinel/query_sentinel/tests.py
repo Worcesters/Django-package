@@ -60,6 +60,7 @@ def test_build_interactive_html_includes_controls() -> None:
 def test_format_settings_help_lists_headers() -> None:
     text = format_settings_help()
     assert "X-Django-SQL-Count" in text
+    assert "X-Django-N-Plus-One-Source" in text
 
 
 @patch("query_sentinel.status_cmd.bootstrap_runtime")

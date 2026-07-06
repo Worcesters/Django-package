@@ -7,6 +7,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from query_sentinel.collector import query_collection
+from query_sentinel.debug_format import format_n_plus_one_message
 from query_sentinel.exceptions import NPlusOneError
 from query_sentinel.selectors import get_sentinel_config
 from query_sentinel.services import build_analysis_report, enforce_policies
@@ -37,9 +38,7 @@ def fail_on_n_plus_one(*, threshold: int | None = None) -> Callable[[F], F]:
             try:
                 enforce_policies(report, config, strict=True)
             except NPlusOneError as exc:
-                top = report.redundant_patterns[0] if report.redundant_patterns else None
-                detail = f" ({top.execution_count}x)" if top else ""
-                raise AssertionError(f"{exc.message}{detail}") from exc
+                raise AssertionError(format_n_plus_one_message(report)) from exc
             return result
 
         return wrapper  # type: ignore[return-value]

@@ -17,6 +17,8 @@ DEFAULT_MIDDLEWARE = "query_sentinel.middleware.QuerySentinelMiddleware"
 HEADER_SQL_COUNT = "X-Django-SQL-Count"
 HEADER_N_PLUS_ONE = "X-Django-N-Plus-One-Detected"
 HEADER_MAX_REDUNDANCY = "X-Django-SQL-Max-Redundancy"
+HEADER_N_PLUS_ONE_SOURCE = "X-Django-N-Plus-One-Source"
+HEADER_N_PLUS_ONE_DEBUG = "X-Django-N-Plus-One-Debug"
 
 
 def format_settings_help() -> str:
@@ -37,7 +39,8 @@ Constantes :
       Seuil optionnel de requêtes par requête HTTP (alerte / blocage staging)
 
   {SETTING_DEBUG_HEADERS}
-      Injecte {HEADER_SQL_COUNT} et {HEADER_N_PLUS_ONE} si DEBUG=True. Défaut : True
+      Injecte {HEADER_SQL_COUNT}, {HEADER_N_PLUS_ONE}, {HEADER_N_PLUS_ONE_SOURCE}
+      et {HEADER_N_PLUS_ONE_DEBUG} si DEBUG=True. Défaut : True
 
   {SETTING_STRICT_IN_TESTS}
       Active le mode strict global pour les tests (décorateur / mixin). Défaut : False

@@ -6,6 +6,7 @@ import json
 import logging
 from typing import Any
 
+from query_sentinel.debug_format import build_debug_payload
 from query_sentinel.schemas import AnalysisReport
 
 logger = logging.getLogger("query_sentinel")
@@ -21,16 +22,7 @@ def log_analysis_event(
     """Logue un événement de redondance SQL (structlog si disponible, sinon stdlib JSON)."""
     payload: dict[str, Any] = {
         "event": "query_sentinel_redundancy",
-        "sql_count": report.total_queries,
-        "n_plus_one_detected": report.n_plus_one_detected,
-        "max_redundancy": report.max_redundancy,
-        "redundant_patterns": [
-            {
-                "count": pattern.execution_count,
-                "normalized_sql": pattern.normalized_sql[:500],
-            }
-            for pattern in report.redundant_patterns[:5]
-        ],
+        **build_debug_payload(report),
         "path": path,
         "method": method,
         "view_name": view_name,

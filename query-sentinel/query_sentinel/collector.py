@@ -9,6 +9,7 @@ from typing import Any, Callable, Iterator
 
 from django.db import connections
 
+from query_sentinel.origin import capture_query_origin
 from query_sentinel.schemas import QueryRecord
 
 _active_records: ContextVar[list[QueryRecord] | None] = ContextVar(
@@ -65,6 +66,7 @@ def _build_wrapper(
                 params=_normalize_params(params),
                 duration_ms=duration_ms,
                 alias=alias,
+                origin=capture_query_origin(),
             )
         )
         return result

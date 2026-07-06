@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from query_sentinel.analyzer import analyze_queries
+from query_sentinel.debug_format import format_n_plus_one_message
 from query_sentinel.exceptions import NPlusOneError, QueryBudgetExceededError
 from query_sentinel.schemas import AnalysisReport, QueryRecord, SentinelConfig
 
@@ -32,10 +33,8 @@ def enforce_policies(
     is_strict = config.strict_in_tests if strict is None else strict
 
     if report.n_plus_one_detected and (is_strict or config.block_on_n_plus_one_staging):
-        top = report.redundant_patterns[0]
         raise NPlusOneError(
-            f"N+1 détecté : {top.execution_count}x le motif « {top.normalized_sql[:120]}… » "
-            f"(seuil={top.threshold}).",
+            format_n_plus_one_message(report),
             component="analyzer",
         )
 

@@ -7,6 +7,15 @@ from typing import Any
 
 
 @dataclass(frozen=True)
+class QueryOrigin:
+    """Frame applicatif ayant déclenché une requête SQL."""
+
+    filename: str
+    lineno: int
+    function: str
+
+
+@dataclass(frozen=True)
 class QueryRecord:
     """Une requête SQL capturée pendant une requête HTTP ou un test."""
 
@@ -14,16 +23,19 @@ class QueryRecord:
     params: tuple[Any, ...] = ()
     duration_ms: float | None = None
     alias: str = "default"
+    origin: QueryOrigin | None = None
 
 
 @dataclass(frozen=True)
 class RedundantPattern:
-    """Motif SQL répété (suspect N+1)."""
+    """Motif SQL répété (suspect N+1) avec sources applicatives."""
 
     normalized_sql: str
     execution_count: int
     sample_sql: str
     threshold: int
+    primary_origin: QueryOrigin | None = None
+    origins: tuple[QueryOrigin, ...] = ()
 
 
 @dataclass

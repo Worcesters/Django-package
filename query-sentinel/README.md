@@ -66,13 +66,22 @@ QUERY_SENTINEL_MAX_QUERIES_PER_REQUEST = None  # optionnel
 
 Le middleware injecte :
 
-| Header | Exemple |
-|--------|---------|
-| `X-Django-SQL-Count` | `42` |
-| `X-Django-N-Plus-One-Detected` | `true` / `false` |
-| `X-Django-SQL-Max-Redundancy` | `12` |
+| Header | Exemple | Signification |
+|--------|---------|---------------|
+| `X-Django-SQL-Count` | `42` | Nombre total de requêtes SQL |
+| `X-Django-N-Plus-One-Detected` | `true` / `false` | N+1 détecté ou non |
+| `X-Django-SQL-Max-Redundancy` | `12` | Pire répétition d'un même motif SQL |
+| `X-Django-N-Plus-One-Source` | `apps/books/views.py:42 in list_books()` | **Fichier + ligne** du principal suspect |
+| `X-Django-N-Plus-One-Debug` | `{"patterns":[...]}` | JSON : SQL, origines, compteurs |
 
 Visibles dans les DevTools du navigateur (onglet Network → Response Headers).
+
+En dev, le détail complet est aussi loggé dans la **console `runserver`** :
+
+```
+WARNING query_sentinel: N+1 détecté :
+  1. 12x « SELECT ... WHERE id = ? » | SQL: SELECT ... | source: apps/books/views.py:42 in list_books()
+```
 
 ## Mode strict en tests
 

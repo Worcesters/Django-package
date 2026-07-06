@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Callable
 
 from django.conf import settings as django_settings
@@ -11,11 +12,20 @@ from query_sentinel.collector import query_collection
 from query_sentinel.conf import (
     HEADER_MAX_REDUNDANCY,
     HEADER_N_PLUS_ONE,
+    HEADER_N_PLUS_ONE_DEBUG,
+    HEADER_N_PLUS_ONE_SOURCE,
     HEADER_SQL_COUNT,
+)
+from query_sentinel.debug_format import (
+    build_debug_header_value,
+    format_n_plus_one_message,
+    format_origin,
 )
 from query_sentinel.logging_integration import log_analysis_event
 from query_sentinel.selectors import get_sentinel_config
 from query_sentinel.services import build_analysis_report, enforce_policies, should_log_redundancy
+
+logger = logging.getLogger("query_sentinel")
 
 
 class QuerySentinelMiddleware:
@@ -38,6 +48,11 @@ class QuerySentinelMiddleware:
             response[HEADER_SQL_COUNT] = str(report.total_queries)
             response[HEADER_N_PLUS_ONE] = str(report.n_plus_one_detected).lower()
             response[HEADER_MAX_REDUNDANCY] = str(report.max_redundancy)
+            if report.n_plus_one_detected and report.redundant_patterns:
+                top = report.redundant_patterns[0]
+                response[HEADER_N_PLUS_ONE_SOURCE] = format_origin(top.primary_origin)
+                response[HEADER_N_PLUS_ONE_DEBUG] = build_debug_header_value(report)
+                logger.warning(format_n_plus_one_message(report))
 
         if should_log_redundancy(report, config):
             log_analysis_event(

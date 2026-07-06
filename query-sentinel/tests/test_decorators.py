@@ -27,7 +27,7 @@ def _run_repeated_queries() -> int:
 @pytest.mark.django_db
 def test_fail_on_n_plus_one_raises_assertion() -> None:
     configure_from_dict({"QUERY_SENTINEL_N_PLUS_ONE_THRESHOLD": 2})
-    with pytest.raises(AssertionError, match="détecté"):
+    with pytest.raises(AssertionError, match="_run_repeated_queries"):
         _run_repeated_queries()
 
 
