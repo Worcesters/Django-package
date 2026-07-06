@@ -1,0 +1,97 @@
+@startuml package_archi
+title query-sentinel — Performance & Protection SQL Django
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+package "query_sentinel" as pkg {
+  package "HTTP" as pkg_http {
+    class QuerySentinelMiddleware {
+      +__call__(request): HttpResponse
+      -_resolve_view_name(request): str
+    }
+  }
+
+  package "collector.py" as pkg_collector {
+    class query_collection <<context>> {
+      +records: list[QueryRecord]
+    }
+    note right of query_collection
+      execute_wrapper Django
+      sur toutes les connexions
+    end note
+  }
+
+  package "analyzer.py" as pkg_analyzer {
+    class normalize_sql(sql): str
+    class analyze_queries(records, threshold): AnalysisReport
+  }
+
+  package "services.py" as pkg_services {
+    class SentinelServices {
+      +build_analysis_report(records, config): AnalysisReport
+      +enforce_policies(report, config): None
+      +should_log_redundancy(report, config): bool
+    }
+  }
+
+  package "selectors.py" as pkg_selectors {
+    class SentinelSelectors {
+      +get_sentinel_config(): SentinelConfig
+    }
+  }
+
+  package "settings_source.py" as pkg_settings {
+    class configure_from_dict(data): None
+    class configure_from_file(path): None
+    class get_setting(name): Any
+    class bootstrap_runtime(): None
+  }
+
+  package "decorators.py / mixins.py" as pkg_tests {
+    class fail_on_n_plus_one <<decorator>>
+    class SentinelTestMixin <<mixin>>
+  }
+
+  package "logging_integration.py" as pkg_log {
+    class log_analysis_event(report, path, method): None
+  }
+
+  package "conf.py" as pkg_conf {
+    class QUERY_SENTINEL_* <<settings>>
+  }
+}
+
+package "projet hôte" as host {
+  class DjangoView <<CBV>>
+  class CeleryTask <<job>>
+  class PytestTest <<test>>
+}
+
+QuerySentinelMiddleware -down-> query_collection : enveloppe requête
+query_collection -down-> DjangoView : capture SQL
+DjangoView -down-> analyze_queries : via services
+analyze_queries -down-> SentinelServices
+SentinelServices -down-> log_analysis_event : si seuil prod
+SentinelServices -down-> QuerySentinelMiddleware : headers DEBUG
+
+fail_on_n_plus_one -down-> query_collection
+SentinelTestMixin -down-> query_collection
+PytestTest ..> fail_on_n_plus_one
+
+SentinelSelectors -down-> pkg_settings : get_setting
+SentinelSelectors -down-> pkg_conf
+
+note bottom of pkg_conf
+  QUERY_SENTINEL_ENABLED = True
+  QUERY_SENTINEL_N_PLUS_ONE_THRESHOLD = 3
+  QUERY_SENTINEL_DEBUG_HEADERS = True
+  QUERY_SENTINEL_STRUCTLOG_ENABLED = True
+
+  Headers DEBUG :
+  X-Django-SQL-Count
+  X-Django-N-Plus-One-Detected
+  X-Django-SQL-Max-Redundancy
+end note
+
+@enduml

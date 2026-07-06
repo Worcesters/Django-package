@@ -1,0 +1,44 @@
+[project]
+name = "query-sentinel"
+version = "0.1.0"
+description = "Package Django — détection N+1, surveillance SQL passive/active"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.0",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+query-sentinel = "query_sentinel.cli:main"
+
+[project.optional-dependencies]
+structlog = ["structlog>=24.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "ruff>=0.8",
+    "mypy>=1.0",
+    "structlog>=24.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["query_sentinel"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"README.md" = "query_sentinel/README.md"
+
+[tool.hatch.build.targets.sdist]
+include = ["query_sentinel/docs/package_archi.puml"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tests.settings"
+python_files = ["test_*.py", "tests.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
