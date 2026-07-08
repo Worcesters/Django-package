@@ -14,7 +14,7 @@ def run_tests(
 ) -> None:
     """Exécute pytest dans le répertoire courant du package."""
     if settings_module:
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
+        os.environ["DJANGO_SETTINGS_MODULE"] = settings_module
         _bootstrap_django(settings_module)
 
     import pytest
@@ -27,23 +27,34 @@ def run_tests(
 def _bootstrap_django(settings_module: str) -> None:
     try:
         import django
+        from django.conf import settings
     except ImportError:
         return
 
     _ensure_project_on_path()
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings_module)
-    if not django.apps.apps.ready:
+    os.environ["DJANGO_SETTINGS_MODULE"] = settings_module
+
+    if settings.configured:
+        return
+
+    try:
         django.setup()
+    except ModuleNotFoundError as exc:
+        raise SystemExit(
+            f"Impossible d'importer le module settings '{settings_module}'.\n"
+            f"Vérifiez le chemin (ex. config.settings.base) depuis la racine du projet.\n"
+            f"Détail : {exc}"
+        ) from exc
 
 
 def _ensure_project_on_path() -> None:
     cwd = Path.cwd().resolve()
     for parent in [cwd, *cwd.parents]:
-        if (parent / "pyproject.toml").is_file() and (parent / "tests").is_dir():
-            if str(parent) not in sys.path:
-                sys.path.insert(0, str(parent))
-            break
         if (parent / "manage.py").is_file():
             if str(parent) not in sys.path:
                 sys.path.insert(0, str(parent))
-            break
+            return
+        if (parent / "pyproject.toml").is_file() and (parent / "tests").is_dir():
+            if str(parent) not in sys.path:
+                sys.path.insert(0, str(parent))
+            return

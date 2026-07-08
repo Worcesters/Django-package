@@ -7,6 +7,7 @@ from pathlib import Path
 
 from completion.cli import PACKAGE_CLI, build_parser, main
 from completion.complete_cmd import run_complete
+from completion.schemas import CompletionResult, TokenUsage
 from completion.conf import SETTING_DEFAULT_PROVIDER, SETTING_PROVIDERS, format_settings_help
 from completion.factory import llm_factory
 from base_cmd.preview import build_interactive_html, build_kroki_preview_url
