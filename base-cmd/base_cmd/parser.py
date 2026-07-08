@@ -58,7 +58,10 @@ def add_test_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--test",
         action="store_true",
-        help="Lance la suite Pytest du package (équivalent à uv run pytest).",
+        help=(
+            "Lance pytest. Mettez --settings/--config avant les filtres pytest. "
+            "Ex : --test --settings config.settings.dev -- -k test_foo -v"
+        ),
     )
     parser.add_argument(
         "pytest_remainder",
@@ -104,8 +107,8 @@ def add_shared_args(parser: argparse.ArgumentParser) -> None:
     """Regroupe les arguments communs à tous les packages."""
     add_readme_arg(parser)
     add_preview_args(parser)
-    add_test_arg(parser)
     add_config_args(parser)
+    add_test_arg(parser)  # REMAINDER en dernier
 
 
 def validate_settings_config_exclusive(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
@@ -130,4 +133,28 @@ def collect_pytest_args(args: argparse.Namespace) -> list[str]:
     remainder = list(getattr(args, "pytest_remainder", []) or [])
     if remainder and remainder[0] == "--":
         remainder = remainder[1:]
-    return remainder or ["-q"]
+
+    _reject_cli_flags_in_pytest_remainder(remainder)
+
+    if not remainder:
+        return ["-q"]
+
+    if len(remainder) == 1 and not remainder[0].startswith("-"):
+        return ["-q", "-k", remainder[0]]
+
+    return remainder
+
+
+def _reject_cli_flags_in_pytest_remainder(remainder: list[str]) -> None:
+    """Bloque si --settings/--config ont été avalés par le REMAINDER pytest."""
+    leaked = [token for token in remainder if token in ("--settings", "--config")]
+    if not leaked:
+        return
+    message = (
+        "Erreur : --settings et --config doivent être placés AVANT les arguments pytest.\n"
+        "  Correct : uv run inference --test --settings config.settings.dev\n"
+        "  Filtre  : uv run inference --test --settings config.settings.dev -- -k test_foo -v\n"
+        '  Incorrect : uv run inference --test "mon test" --settings config.settings.dev'
+    )
+    print(message, file=sys.stderr)
+    raise SystemExit(1)

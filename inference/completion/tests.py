@@ -13,7 +13,7 @@ from base_cmd.preview import build_interactive_html, build_kroki_preview_url
 from base_cmd.readme import load_readme
 from base_cmd.docs import load_puml
 from base_cmd.terminal import colorize_help, colorize_readme
-from completion.schemas import CompletionResult, TokenUsage
+from base_cmd.parser import collect_pytest_args
 
 
 def test_load_puml_returns_startuml_block() -> None:
@@ -78,6 +78,24 @@ def test_main_rejects_settings_and_config_together() -> None:
         main(["--test", "--settings", "tests.settings", "--config", "x.json"])
     except SystemExit as exc:
         assert exc.code == 2
+    else:
+        raise AssertionError("expected SystemExit")
+
+
+def test_cli_test_with_settings_and_keyword_filter() -> None:
+    args = build_parser().parse_args(
+        ["--test", "--settings", "tests.settings", "mon test"]
+    )
+    assert args.test is True
+    assert args.settings == "tests.settings"
+    assert collect_pytest_args(args) == ["-q", "-k", "mon test"]
+
+
+def test_main_rejects_settings_after_pytest_remainder() -> None:
+    try:
+        main(["--test", "mon test", "--settings", "config.settings.base"])
+    except SystemExit as exc:
+        assert exc.code == 1
     else:
         raise AssertionError("expected SystemExit")
 
